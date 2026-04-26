@@ -7,9 +7,10 @@ export default function NewsModal({ turn, currentNews, economy, onClose }) {
   const { headlines, chipTake } = currentNews
 
   const tierConfig = {
-    economy: { label: '🌍 Economy', color: '#1D4ED8', bg: '#EFF6FF', border: '#BFDBFE' },
-    sector:  { label: '🏭 Sector',  color: '#7C3AED', bg: '#F5F3FF', border: '#C4B5FD' },
-    gossip:  { label: '📣 Gossip',  color: '#EA580C', bg: '#FFF7ED', border: '#FDBA74' },
+    economy: { label: '🌍 Economy',    color: '#1D4ED8', bg: '#EFF6FF',  border: '#BFDBFE' },
+    sector:  { label: '🏭 Sector',     color: '#7C3AED', bg: '#F5F3FF',  border: '#C4B5FD' },
+    gossip:  { label: '📣 Gossip',     color: '#EA580C', bg: '#FFF7ED',  border: '#FDBA74' },
+    flash:   { label: '⚡ Flash Sale', color: '#B45309', bg: '#FFFBEB',  border: '#FCD34D' },
   }
 
   const chipMood = economy.state === 'booming' ? 'excited'

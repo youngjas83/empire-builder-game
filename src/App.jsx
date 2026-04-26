@@ -6,6 +6,7 @@ import {
   buyCompany,
   sellCompany,
   openLocation,
+  sellLocation,
   calcNetWorth,
   getEconomyLabel,
   getEconomyColor,
@@ -152,7 +153,9 @@ export default function App() {
     const s = appState
     const cs = s.companyStates[companyId]
     if (!cs) return
-    const price = Math.round(cs.profit * cs.multiplier)
+    const basePrice = Math.round(cs.profit * cs.multiplier)
+    const hasFlashSale = s.flashSale && s.flashSale.companyId === companyId
+    const price = hasFlashSale ? Math.round(basePrice * (1 - s.flashSale.discount)) : basePrice
     const cashAfter = s.cash - price
     setAppState(prev => ({
       ...prev,
@@ -182,9 +185,25 @@ export default function App() {
     if (!entry || !cs || !co || entry.locations >= 5) return
     const cost = Math.round(cs.profit * cs.multiplier * co.locationCost)
     const cashAfter = s.cash - cost
+    // Calculate approx value added by this location (+30% of current value)
+    const valueAdded = Math.round(cs.profit * cs.multiplier * 0.30)
     setAppState(prev => ({
       ...prev,
-      actionDialog: { type: 'openLocation', companyId, cost, cashAfter },
+      actionDialog: { type: 'openLocation', companyId, cost, cashAfter, valueAdded },
+    }))
+  }
+
+  function handleSellLocation(companyId) {
+    const s = appState
+    const entry = s.portfolio[companyId]
+    const cs = s.companyStates[companyId]
+    const co = COMPANIES.find(c => c.id === companyId)
+    if (!entry || !cs || !co || entry.locations <= 1) return
+    const salePrice = Math.round(cs.profit * cs.multiplier * co.locationCost)
+    const cashAfter = s.cash + salePrice
+    setAppState(prev => ({
+      ...prev,
+      actionDialog: { type: 'sellLocation', companyId, proceeds: salePrice, cashAfter },
     }))
   }
 
@@ -202,6 +221,8 @@ export default function App() {
         newState = sellCompany(prev, actionDialog.companyId)
       } else if (actionDialog.type === 'openLocation') {
         newState = openLocation(prev, actionDialog.companyId)
+      } else if (actionDialog.type === 'sellLocation') {
+        newState = sellLocation(prev, actionDialog.companyId)
       } else {
         newState = { ...prev, actionDialog: null }
       }
@@ -330,7 +351,7 @@ export default function App() {
     showNewsModal, showWildCard, wildCard,
     actionDialog, badgeModal, showLevelSheet,
     portfolio, companyStates, turnActions,
-    economy, sectorCycles, netWorthHistory, level, cash,
+    economy, sectorCycles, netWorthHistory, level, cash, flashSale,
     currentNews, turn, difficulty, chipSubTab, chipSearch, expandedQuestion,
     showEarnAnimation, earnedThisTurn, showBuyToast, showEconomyModal,
   } = appState
@@ -356,9 +377,12 @@ export default function App() {
             companyId={viewingCompany}
             companyStates={companyStates}
             portfolio={portfolio}
+            cash={cash}
             turnActions={turnActions}
             onBack={handleBackFromCompany}
             onOpenLocation={handleOpenLocation}
+            onSell={handleSell}
+            onSellLocation={handleSellLocation}
           />
         )}
 
@@ -371,6 +395,7 @@ export default function App() {
             turnActions={turnActions}
             sectorName={viewingCoSectorName}
             cash={cash}
+            flashSale={flashSale}
             onBuy={handleBuy}
             onSell={handleSell}
             onOpenLocation={handleOpenLocation}
@@ -388,6 +413,7 @@ export default function App() {
             portfolio={portfolio}
             turnActions={turnActions}
             sectorCycles={sectorCycles}
+            flashSale={flashSale}
             onSelectCompany={handleSelectCompany}
             onBack={handleBackFromSector}
           />
@@ -435,10 +461,8 @@ export default function App() {
         )}
       </div>
 
-      {/* Bottom Nav */}
-      {!viewingCompany && !viewingSector && (
-        <BottomNav activeTab={activeTab} onTabChange={handleTabChange} />
-      )}
+      {/* Bottom Nav — always visible */}
+      <BottomNav activeTab={activeTab} onTabChange={handleTabChange} />
 
       {/* ── Overlays ── */}
 

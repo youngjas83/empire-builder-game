@@ -3,7 +3,10 @@ import { COMPANIES } from '../data/companies.js'
 import { formatMoney, calcLocationsMultiplier } from '../game/engine.js'
 import Sparkline from './Sparkline.jsx'
 
-export default function CompanyCardBack({ companyId, companyStates, portfolio, onBack, onOpenLocation, turnActions }) {
+export default function CompanyCardBack({
+  companyId, companyStates, portfolio, cash,
+  onBack, onOpenLocation, onSell, onSellLocation, turnActions,
+}) {
   const co = COMPANIES.find(c => c.id === companyId)
   const entry = portfolio[companyId]
   if (!co || !entry) return null
@@ -13,7 +16,9 @@ export default function CompanyCardBack({ companyId, companyStates, portfolio, o
   const locMult = calcLocationsMultiplier(entry.locations)
   const totalValue = Math.round(currentValue * locMult)
 
-  const valueChange = totalValue - entry.purchasePrice
+  const locationSpend = entry.locationSpend || 0
+  const totalInvested = entry.purchasePrice + locationSpend
+  const valueChange = totalValue - totalInvested
   const profitsCollected = entry.profitsCollected || 0
   const totalGain = valueChange + profitsCollected
   const gainColor = totalGain >= 0 ? '#16A34A' : '#DC2626'
@@ -22,6 +27,9 @@ export default function CompanyCardBack({ companyId, companyStates, portfolio, o
 
   const actionTaken = turnActions && turnActions[companyId]
   const locationCost = Math.round(currentValue * co.locationCost)
+
+  const canSellLocation = entry.locations > 1 && !actionTaken
+  const canOpenLocation = entry.locations < 5 && !actionTaken
 
   const locations = []
   for (let i = 1; i <= 5; i++) {
@@ -72,7 +80,7 @@ export default function CompanyCardBack({ companyId, companyStates, portfolio, o
         </div>
       </div>
 
-      <div style={{ padding: '14px 14px 130px' }}>
+      <div style={{ padding: '14px 14px 160px' }}>
 
         {/* Total Gain — hero stat */}
         <div style={{
@@ -133,43 +141,102 @@ export default function CompanyCardBack({ companyId, companyStates, portfolio, o
               </div>
             ))}
           </div>
-          {entry.locations < 5 && !actionTaken && (
-            <button
-              onClick={() => onOpenLocation && onOpenLocation(companyId)}
-              style={{
-                marginTop: 12, width: '100%', padding: '12px',
-                background: 'linear-gradient(135deg, #16A34A, #22C55E)',
-                color: '#fff', border: 'none', borderRadius: 12,
-                fontSize: 14, fontWeight: 900,
-                fontFamily: 'inherit', cursor: 'pointer',
-                boxShadow: '0 4px 12px rgba(34,197,94,0.3)',
-              }}
-            >
-              + Open Next Location · {formatMoney(locationCost)}
-            </button>
+
+          {/* Location action buttons */}
+          <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+            {canSellLocation && (
+              <button
+                onClick={() => onSellLocation && onSellLocation(companyId)}
+                style={{
+                  flex: 1, padding: '11px',
+                  background: 'linear-gradient(135deg, #EA580C, #F97316)',
+                  color: '#fff', border: 'none', borderRadius: 12,
+                  fontSize: 13, fontWeight: 900,
+                  fontFamily: 'inherit', cursor: 'pointer',
+                  boxShadow: '0 3px 10px rgba(234,88,12,0.3)',
+                }}
+              >
+                − Sell Location · {formatMoney(locationCost)}
+              </button>
+            )}
+            {canOpenLocation && (
+              <button
+                onClick={() => onOpenLocation && onOpenLocation(companyId)}
+                style={{
+                  flex: canSellLocation ? 1 : 1, width: canSellLocation ? undefined : '100%',
+                  padding: '11px',
+                  background: 'linear-gradient(135deg, #16A34A, #22C55E)',
+                  color: '#fff', border: 'none', borderRadius: 12,
+                  fontSize: 13, fontWeight: 900,
+                  fontFamily: 'inherit', cursor: 'pointer',
+                  boxShadow: '0 3px 10px rgba(34,197,94,0.3)',
+                }}
+              >
+                + Open Location · {formatMoney(locationCost)}
+              </button>
+            )}
+          </div>
+
+          {actionTaken && (
+            <div style={{ marginTop: 10, fontSize: 13, fontWeight: 700, color: '#94A3B8', textAlign: 'center' }}>
+              ✓ Action already taken this turn
+            </div>
           )}
         </div>
 
         {/* Investment breakdown */}
-        <div style={{ background: '#fff', borderRadius: 14, padding: '14px', boxShadow: '0 1px 4px rgba(0,0,0,0.05)' }}>
+        <div style={{ background: '#fff', borderRadius: 14, padding: '14px', marginBottom: 12, boxShadow: '0 1px 4px rgba(0,0,0,0.05)' }}>
           <div style={{ fontSize: 12, fontWeight: 800, color: '#374151', marginBottom: 12 }}>
             💼 Investment Breakdown
           </div>
           {[
-            { label: 'I Paid',           value: formatMoney(entry.purchasePrice),  color: '#374151' },
-            { label: 'Value Today',       value: formatMoney(totalValue),           color: '#1D4ED8' },
+            { label: 'Company Purchase',  value: formatMoney(entry.purchasePrice),           color: '#374151' },
+            ...(locationSpend > 0 ? [{ label: 'Locations Spent',   value: formatMoney(locationSpend),              color: '#374151' }] : []),
+            { label: 'Total Invested',    value: formatMoney(totalInvested),                  color: '#374151', bold: true },
+            { label: 'Value Today',       value: formatMoney(totalValue),                     color: '#1D4ED8' },
             { label: 'Value Change',      value: (valueChange >= 0 ? '+' : '') + formatMoney(valueChange), color: valueChange >= 0 ? '#16A34A' : '#DC2626' },
-            { label: 'Profits Collected', value: '+' + formatMoney(profitsCollected), color: '#16A34A' },
-          ].map(row => (
+            { label: 'Profits Collected', value: '+' + formatMoney(profitsCollected),         color: '#16A34A' },
+          ].map((row, i) => (
             <div key={row.label} style={{
               display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-              padding: '9px 0', borderBottom: '1px solid #F1F5F9',
+              padding: '9px 0',
+              borderBottom: i < 5 ? '1px solid #F1F5F9' : 'none',
+              ...(row.bold ? { background: '#F8FAFC', borderRadius: 8, padding: '9px 8px', margin: '0 -8px' } : {}),
             }}>
-              <span style={{ fontSize: 14, fontWeight: 600, color: '#6B7280' }}>{row.label}</span>
-              <span style={{ fontSize: 16, fontWeight: 800, color: row.color }}>{row.value}</span>
+              <span style={{ fontSize: 14, fontWeight: row.bold ? 800 : 600, color: row.bold ? '#1E293B' : '#6B7280' }}>{row.label}</span>
+              <span style={{ fontSize: row.bold ? 17 : 16, fontWeight: 800, color: row.color }}>{row.value}</span>
             </div>
           ))}
         </div>
+
+        {/* Sell Company */}
+        <div style={{ background: '#fff', borderRadius: 14, padding: '14px', boxShadow: '0 1px 4px rgba(0,0,0,0.05)' }}>
+          <div style={{ fontSize: 12, fontWeight: 800, color: '#374151', marginBottom: 10 }}>
+            🚪 Exit Position
+          </div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: '#6B7280', marginBottom: 12, lineHeight: 1.5 }}>
+            Sell the entire company at current market value (all {entry.locations} location{entry.locations !== 1 ? 's' : ''} included).
+          </div>
+          <button
+            onClick={() => !actionTaken && onSell && onSell(companyId)}
+            disabled={!!actionTaken}
+            style={{
+              width: '100%', padding: '14px',
+              background: actionTaken
+                ? '#E5E7EB'
+                : 'linear-gradient(135deg, #DC2626, #EF4444)',
+              color: actionTaken ? '#9CA3AF' : '#fff',
+              border: 'none', borderRadius: 14,
+              fontSize: 15, fontWeight: 900,
+              fontFamily: 'inherit',
+              cursor: actionTaken ? 'default' : 'pointer',
+              boxShadow: actionTaken ? 'none' : '0 4px 14px rgba(239,68,68,0.35)',
+            }}
+          >
+            {actionTaken ? '✓ Action taken this turn' : `Sell ${co.name} · ${formatMoney(totalValue)}`}
+          </button>
+        </div>
+
       </div>
     </div>
   )

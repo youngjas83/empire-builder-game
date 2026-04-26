@@ -1,6 +1,8 @@
 // News template bank for the Empire Gazette
+import { COMPANIES } from './companies.js'
 
-// Economy headlines by state
+// ─── Economy Headlines ────────────────────────────────────────────────────────
+
 export const ECONOMY_HEADLINES = {
   booming: [
     "🟢 Markets soar to record highs as consumer confidence reaches 10-year peak",
@@ -38,14 +40,15 @@ export const ECONOMY_HEADLINES = {
 }
 
 export const ECONOMY_CHIP_TAKES = {
-  booming: "The economy is booming! Great time to own growth companies. Just watch for signs of a slowdown — good times don't last forever.",
-  steady: "Markets are steady. A good time to research companies and plan your next move!",
-  slowdown: "Slowdown mode! Stick with defensive companies like BurgerBlast and FreshMart. Cash is your friend right now.",
-  preSlowdown: "Hmm, I'm seeing some warning signs in the economy. Maybe start thinking about which companies hold up best in tough times...",
-  preBoom: "Things look like they might be improving! Start thinking about growth companies that could really take off in a boom.",
+  booming: "The economy is booming! 🚀 Great time to own growth companies. Just watch for early slowdown signs — good times don't last forever.",
+  steady: "Markets are steady. A solid time to research companies and plan your next move!",
+  slowdown: "Slowdown mode! 😬 Stick with defensive companies like BurgerBlast and FreshMart. And watch for sector downturns — they drain company value every turn now!",
+  preSlowdown: "⚠️ I'm seeing warning signs in the economy. Think about which companies hold up best in tough times — and which ones to sell before a sector downturn hits!",
+  preBoom: "Things look like they might be improving! 🌱 Start thinking about growth companies that could really take off when the boom hits.",
 }
 
-// Sector headlines by sector and state
+// ─── Sector Headlines ─────────────────────────────────────────────────────────
+
 export const SECTOR_HEADLINES = {
   consumer: {
     boom: [
@@ -61,6 +64,14 @@ export const SECTOR_HEADLINES = {
       "🛍️ Consumer confidence drops — shoppers cut discretionary spending",
       "🛍️ Retail slump deepens as households prioritize essentials",
       "🛍️ Fashion and lifestyle brands hit hardest as spending contracts",
+    ],
+    preDownturn: [
+      "🛍️ ⚠️ Consumer confidence showing early cracks — retail slowdown may be coming",
+      "🛍️ ⚠️ Analysts warn: consumer sector may be cooling faster than expected",
+    ],
+    preBoom: [
+      "🛍️ 🌱 Consumer spending showing early signs of recovery",
+      "🛍️ 🌱 Retail traffic picking up — consumer sector may be turning the corner",
     ],
   },
   realEstate: {
@@ -78,11 +89,83 @@ export const SECTOR_HEADLINES = {
       "🏠 Office vacancies spike — landlords offer steep discounts to fill space",
       "🏠 Real estate slowdown: transactions drop as buyers sit on sidelines",
     ],
+    preDownturn: [
+      "🏠 ⚠️ Real estate analysts spot early warning signs — sector may be cooling",
+      "🏠 ⚠️ Rising rates could pressure real estate values in the near term",
+    ],
+    preBoom: [
+      "🏠 🌱 Real estate inventory tightening — property demand quietly picking up",
+      "🏠 🌱 Mortgage rates easing — property market may be set to rebound",
+    ],
+  },
+  entertainment: {
+    boom: [
+      "🎭 Entertainment spending surges — people splurging on concerts, streaming, sports",
+      "🎭 Box office and streaming numbers smash records this quarter",
+      "🎭 Live events sell out in minutes as entertainment boom continues",
+    ],
+    normal: [
+      "🎭 Entertainment sector steady — solid viewership and attendance numbers",
+      "🎭 Streaming and live events hold their ground in a balanced quarter",
+    ],
+    downturn: [
+      "🎭 Entertainment budgets squeezed — consumers cut subscriptions first",
+      "🎭 Streaming cancellations spike as households tighten belts",
+      "🎭 Live event attendance drops — ticket prices still high, wallets aren't",
+    ],
+    preDownturn: [
+      "🎭 ⚠️ Entertainment sector showing stress — subscription churn rising",
+      "🎭 ⚠️ Analysts warn entertainment spending may be peaking",
+    ],
+    preBoom: [
+      "🎭 🌱 Entertainment demand quietly recovering — streaming signups tick up",
+      "🎭 🌱 Live event bookings recovering — entertainment sector may be bouncing back",
+    ],
+  },
+  tech: {
+    boom: [
+      "💻 Tech sector explodes — AI investment reaches historic levels",
+      "💻 Software stocks surge as enterprise spending accelerates",
+    ],
+    normal: [
+      "💻 Tech sector holds steady — innovation continues at measured pace",
+    ],
+    downturn: [
+      "💻 Tech layoffs accelerate as companies cut costs in slowdown",
+      "💻 Enterprise IT budgets frozen — software sector feels the squeeze",
+    ],
+    preDownturn: [
+      "💻 ⚠️ Tech valuations under pressure — investors growing cautious",
+    ],
+    preBoom: [
+      "💻 🌱 Tech hiring picks up — sector may be recovering from slowdown",
+    ],
+  },
+  industrials: {
+    boom: [
+      "⚙️ Manufacturing output hits record — factory orders backlogged for months",
+      "⚙️ Infrastructure spending drives industrial sector boom",
+    ],
+    normal: [
+      "⚙️ Industrials sector stable — steady orders and employment",
+    ],
+    downturn: [
+      "⚙️ Factory orders drop sharply as businesses cut capital spending",
+      "⚙️ Industrial sector slowdown deepens — layoffs spreading",
+    ],
+    preDownturn: [
+      "⚙️ ⚠️ Manufacturing data weakening — industrial slowdown may be coming",
+    ],
+    preBoom: [
+      "⚙️ 🌱 Industrial orders recovering — manufacturing sector showing signs of life",
+    ],
   },
 }
 
-// Company gossip headlines (mix of real signals and red herrings)
+// ─── Company Gossip ───────────────────────────────────────────────────────────
+
 export const COMPANY_GOSSIP = {
+  // Consumer
   burgerblast: {
     positive: [
       "🍔 BurgerBlast goes viral on TikTok — lines stretching around the block",
@@ -105,7 +188,7 @@ export const COMPANY_GOSSIP = {
       "👟 NovaDrip limited drop creates overnight campouts outside stores",
     ],
     neutral: [
-      "👟 NovaDrip announces new colorway — social media buzzing with opinions",
+      "👟 NovaDrip announces new colorway — social media buzzing",
     ],
     negative: [
       "👟 Rival brand poaching NovaDrip's celebrity endorsers",
@@ -168,6 +251,7 @@ export const COMPANY_GOSSIP = {
       "👕 Gaming apparel market getting crowded — PixelWear faces new rivals",
     ],
   },
+  // Real Estate
   skyflats: {
     positive: [
       "🏢 SkyFlats reports 99% occupancy — waiting lists growing in all cities",
@@ -244,40 +328,174 @@ export const COMPANY_GOSSIP = {
       "🏖️ SunVilla feeling the pinch as consumers cut luxury travel spending",
     ],
   },
+  // Entertainment
+  streamflix: {
+    positive: [
+      "🎬 StreamFlix's new series breaks all viewing records — subscriber surge incoming",
+      "🎬 StreamFlix beats earnings estimates — ad-supported tier growing faster than expected",
+      "🎬 StreamFlix lands exclusive deal with Hollywood's hottest director",
+    ],
+    neutral: [
+      "🎬 StreamFlix rolls out new features — early user response positive",
+      "🎬 StreamFlix expands into live sports streaming — analysts bullish",
+    ],
+    negative: [
+      "🎬 StreamFlix subscriber growth slows — password-sharing crackdown causes churn",
+      "🎬 Content budget cuts at StreamFlix raise concerns about future slate quality",
+    ],
+  },
+  thunderfc: {
+    positive: [
+      "⚽ Thunder FC wins major trophy — global jersey sales go through the roof",
+      "⚽ Thunder FC's star player signs long-term extension — fans and investors relieved",
+      "⚽ Thunder FC sells out 20 consecutive home matches — record merchandising revenue",
+    ],
+    neutral: [
+      "⚽ Thunder FC announces new stadium expansion — capacity up 30%",
+      "⚽ Thunder FC signs lucrative global TV broadcast deal",
+    ],
+    negative: [
+      "⚽ Thunder FC star player injured — playoff hopes and revenue at risk",
+      "⚽ Thunder FC in early-round cup exit — merchandising hit expected",
+    ],
+  },
+  gameboxstudios: {
+    positive: [
+      "🕹️ GameBox Studios' new title breaks launch records — 10M copies in 48 hours",
+      "🕹️ GameBox Studios announces sequel to biggest franchise — stock analyst upgrades",
+      "🕹️ GameBox Studios wins multiple Game of the Year awards — massive PR boost",
+    ],
+    neutral: [
+      "🕹️ GameBox Studios teases new IP — early trailers generating buzz",
+      "🕹️ GameBox Studios acquires indie studio with cult following",
+    ],
+    negative: [
+      "🕹️ GameBox Studios' latest title delayed 6 months — revenue miss expected",
+      "🕹️ Review scores disappoint for GameBox Studios' newest release",
+      "🕹️ GameBox Studios faces backlash over in-game purchases policy",
+    ],
+  },
+  celebbuzz: {
+    positive: [
+      "🌟 CelebBuzz signs three A-list celebrities in one week — agency on a roll",
+      "🌟 CelebBuzz client tops music charts globally — management fee windfall",
+      "🌟 CelebBuzz named top talent agency — bidding war for their roster begins",
+    ],
+    neutral: [
+      "🌟 CelebBuzz expanding into sports representation — new revenue stream",
+    ],
+    negative: [
+      "🌟 CelebBuzz client in controversy — reputational risk for agency",
+      "🌟 Major CelebBuzz star leaves for rival agency — revenue hit expected",
+      "🌟 CelebBuzz celebrity goes quiet on social media — brand deals on hold",
+    ],
+  },
+  soundwave: {
+    positive: [
+      "🎵 SoundWave's headlining artist breaks streaming records — royalty windfall",
+      "🎵 SoundWave announces global concert tour — live revenue to spike",
+      "🎵 SoundWave subscriber growth accelerates — new markets driving signups",
+    ],
+    neutral: [
+      "🎵 SoundWave launches hi-fi audio tier — premium subscribers growing",
+      "🎵 SoundWave partners with major festival circuit — live events expanding",
+    ],
+    negative: [
+      "🎵 SoundWave loses licensing deal with major label — content gap ahead",
+      "🎵 SoundWave facing royalty rate increase — margins under pressure",
+    ],
+  },
+  nightowl: {
+    positive: [
+      "🍿 NightOwl Cinemas lands exclusive summer blockbuster premiere rights",
+      "🍿 NightOwl's premium recliner upgrade drives ticket price increases",
+    ],
+    neutral: [
+      "🍿 NightOwl Cinemas converting screens to premium format — capex heavy",
+    ],
+    negative: [
+      "🍿 NightOwl Cinemas attendance down 15% as streaming releases day-and-date",
+      "🍿 Major studio announces streaming-only release — bypasses NightOwl entirely",
+      "🍿 NightOwl closes 12 underperforming locations — restructuring underway",
+    ],
+  },
 }
+
+// ─── Flash Sale Headlines ─────────────────────────────────────────────────────
+
+function getFlashSaleHeadline(companyId) {
+  const co = COMPANIES.find(c => c.id === companyId)
+  if (!co) return null
+  return `⚡ FLASH DEAL: ${co.emoji} ${co.name} available at 20% OFF — for 2 turns only!`
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 export function pickRandom(arr) {
   return arr[Math.floor(Math.random() * arr.length)]
 }
 
-export function generateNews(economy, sectorCycles, ownedCompanies, turn) {
+// ─── Generate News ────────────────────────────────────────────────────────────
+
+export function generateNews(economy, sectorCycles, ownedCompanies, turn, flashSale) {
   const headlines = []
 
-  // Economy headline (always 1)
+  // 1. Economy headline
   const econState = economy.preSignal || economy.state
   const econHeadlines = ECONOMY_HEADLINES[econState] || ECONOMY_HEADLINES[economy.state]
   headlines.push({ tier: 'economy', text: pickRandom(econHeadlines) })
 
-  // Sector headlines (1 per unlocked sector)
-  const unlockedSectors = ['consumer', 'realEstate']
-  unlockedSectors.forEach(sectorId => {
-    const sectorState = sectorCycles[sectorId] ? sectorCycles[sectorId].state : 'normal'
+  // 2. Sector headlines — always show sectors that have owned companies,
+  //    plus consumer & realEstate as the always-available sectors
+  const sectorsToShow = new Set(['consumer', 'realEstate'])
+  ownedCompanies.forEach(id => {
+    const co = COMPANIES.find(c => c.id === id)
+    if (co) sectorsToShow.add(co.sector)
+  })
+
+  sectorsToShow.forEach(sectorId => {
+    const cycle = sectorCycles[sectorId]
+    if (!cycle) return
     const sectorPool = SECTOR_HEADLINES[sectorId]
-    if (sectorPool) {
-      const pool = sectorPool[sectorState] || sectorPool.normal
+    if (!sectorPool) return
+
+    // Use preSignal state if available for this sector
+    let stateKey = cycle.state
+    if (cycle.preSignal === 'preSlowdown') stateKey = 'preDownturn'
+    else if (cycle.preSignal === 'preBoom') stateKey = 'preBoom'
+
+    const pool = sectorPool[stateKey] || sectorPool[cycle.state] || sectorPool.normal
+    if (pool && pool.length > 0) {
       headlines.push({ tier: 'sector', sectorId, text: pickRandom(pool) })
     }
   })
 
-  // Company gossip (1-2 items, prefer owned companies)
-  const allIds = ['burgerblast','novadrip','glowlab','freshmart','toycraze','pixelwear','skyflats','megamall','storesafe','towerone','warehousex','sunvilla']
+  // 3. Flash sale announcement (highest priority gossip)
+  if (flashSale && flashSale.turnsLeft === 2) {
+    const headline = getFlashSaleHeadline(flashSale.companyId)
+    if (headline) {
+      headlines.push({ tier: 'flash', companyId: flashSale.companyId, text: headline })
+    }
+  } else if (flashSale && flashSale.turnsLeft === 1) {
+    const co = COMPANIES.find(c => c.id === flashSale.companyId)
+    if (co) {
+      headlines.push({
+        tier: 'flash',
+        companyId: flashSale.companyId,
+        text: `⚡ LAST CHANCE: ${co.emoji} ${co.name} 20% flash deal expires next turn!`,
+      })
+    }
+  }
+
+  // 4. Company gossip (1–2 items, prefer owned companies)
+  const allIds = COMPANIES.map(c => c.id)
   const gossipPool = ownedCompanies.length > 0
-    ? [...ownedCompanies, ...allIds.filter(id => !ownedCompanies.includes(id))].slice(0, 4)
+    ? [...ownedCompanies, ...allIds.filter(id => !ownedCompanies.includes(id))].slice(0, 5)
     : allIds.slice(0, 4)
 
-  const gossipCount = Math.random() < 0.5 ? 1 : 2
+  const gossipCount = Math.random() < 0.4 ? 1 : 2
   const usedIds = new Set()
-  for (let i = 0; i < gossipCount && gossipPool.length > 0; i++) {
+  for (let i = 0; i < gossipCount; i++) {
     let id = null
     for (const candidate of gossipPool) {
       if (!usedIds.has(candidate)) { id = candidate; break }
@@ -286,14 +504,27 @@ export function generateNews(economy, sectorCycles, ownedCompanies, turn) {
     usedIds.add(id)
     const companyGossip = COMPANY_GOSSIP[id]
     if (!companyGossip) continue
-    const sentiment = Math.random() < 0.4 ? 'negative' : Math.random() < 0.6 ? 'positive' : 'neutral'
+    // Sentiment weighted toward neutral/positive in boom, negative in slowdown
+    let sentimentRoll = Math.random()
+    let sentiment
+    if (economy.state === 'booming') {
+      sentiment = sentimentRoll < 0.5 ? 'positive' : sentimentRoll < 0.8 ? 'neutral' : 'negative'
+    } else if (economy.state === 'slowdown') {
+      sentiment = sentimentRoll < 0.5 ? 'negative' : sentimentRoll < 0.75 ? 'neutral' : 'positive'
+    } else {
+      sentiment = sentimentRoll < 0.35 ? 'positive' : sentimentRoll < 0.65 ? 'neutral' : 'negative'
+    }
     const pool = companyGossip[sentiment] || companyGossip.neutral || companyGossip.positive
     if (pool && pool.length > 0) {
       headlines.push({ tier: 'gossip', companyId: id, text: pickRandom(pool) })
     }
   }
 
-  const chipTake = ECONOMY_CHIP_TAKES[economy.state] || ECONOMY_CHIP_TAKES.steady
+  // 5. Chip's take — economy-aware, mentions downturns if relevant
+  let chipTake = ECONOMY_CHIP_TAKES[economy.state] || ECONOMY_CHIP_TAKES.steady
+  if (economy.preSignal) {
+    chipTake = ECONOMY_CHIP_TAKES[economy.preSignal] || chipTake
+  }
 
   return { headlines, chipTake }
 }

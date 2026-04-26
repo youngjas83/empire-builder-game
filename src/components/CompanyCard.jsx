@@ -1,5 +1,5 @@
 import React from 'react'
-import { BADGES, COMPANIES } from '../data/companies.js'
+import { BADGES, COMPANIES, SECTORS } from '../data/companies.js'
 import { formatMoney, calcLocationsMultiplier } from '../game/engine.js'
 import Sparkline from './Sparkline.jsx'
 
@@ -40,6 +40,8 @@ export default function CompanyCard({
   companyStates,
   portfolio,
   turnActions,
+  cash,
+  flashSale,
   onBuy,
   onSell,
   onOpenLocation,
@@ -53,11 +55,19 @@ export default function CompanyCard({
 
   const cs = companyStates[companyId] || { profit: co.baseProfit, multiplier: co.baseMultiplier, profitHistory: [] }
   const owned = portfolio[companyId]
-  const value = Math.round(cs.profit * cs.multiplier)
+  const baseValue = Math.round(cs.profit * cs.multiplier)
+  const isOnFlashSale = !owned && flashSale && flashSale.companyId === companyId
+  const flashDiscount = isOnFlashSale ? flashSale.discount : 0
+  const value = isOnFlashSale ? Math.round(baseValue * (1 - flashDiscount)) : baseValue
   const actionTaken = turnActions && turnActions[companyId]
 
   const locMult = owned ? calcLocationsMultiplier(owned.locations) : 1
   const effectiveProfit = Math.round(cs.profit * locMult)
+  const canAfford = cash === undefined || cash >= value
+  const shortfall = canAfford ? 0 : value - cash
+
+  const sectorData = SECTORS[co.sector]
+  const sectorLabel = sectorData ? `${sectorData.emoji} ${sectorData.name}` : co.sector
 
   const hasHistory = cs.profitHistory && cs.profitHistory.length >= 2
 
@@ -138,6 +148,22 @@ export default function CompanyCard({
           </div>
         )}
 
+        {/* Flash Sale badge */}
+        {isOnFlashSale && (
+          <div style={{
+            position: 'absolute',
+            top: 'calc(env(safe-area-inset-top, 0px) + 12px)',
+            right: 12,
+            background: 'linear-gradient(135deg, #D97706, #F59E0B)',
+            color: '#fff',
+            padding: '4px 12px', borderRadius: 20,
+            fontSize: 11, fontWeight: 900, letterSpacing: '0.05em',
+            boxShadow: '0 2px 8px rgba(217,119,6,0.5)',
+          }}>
+            ⚡ {Math.round(flashDiscount * 100)}% OFF · {flashSale.turnsLeft} turn{flashSale.turnsLeft !== 1 ? 's' : ''} left
+          </div>
+        )}
+
         {/* Action taken badge */}
         {actionTaken && !owned && (
           <div style={{
@@ -173,7 +199,7 @@ export default function CompanyCard({
           padding: '3px 12px', borderRadius: 20, marginTop: 6,
           backdropFilter: 'blur(8px)',
         }}>
-          {co.sector === 'consumer' ? '🛍️ Consumer' : '🏠 Real Estate'}
+          {sectorLabel}
         </div>
       </div>
 
@@ -215,6 +241,34 @@ export default function CompanyCard({
             Tap any badge to learn what it means
           </div>
         </div>
+
+        {/* Flash Sale Banner */}
+        {isOnFlashSale && (
+          <div style={{
+            background: 'linear-gradient(135deg, #FFFBEB, #FEF3C7)',
+            border: '2px solid #FCD34D',
+            borderRadius: 14, padding: '14px 16px',
+            marginBottom: 14,
+            boxShadow: '0 4px 16px rgba(252,211,77,0.35)',
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+              <div style={{ fontSize: 14, fontWeight: 900, color: '#92400E' }}>⚡ Flash Sale!</div>
+              <div style={{ fontSize: 11, fontWeight: 800, color: '#B45309', background: '#FEF3C7', padding: '2px 8px', borderRadius: 20, border: '1px solid #FCD34D' }}>
+                {flashSale.turnsLeft} turn{flashSale.turnsLeft !== 1 ? 's' : ''} left
+              </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ fontSize: 22, fontWeight: 900, color: '#16A34A' }}>{formatMoney(value)}</div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: '#9CA3AF', textDecoration: 'line-through' }}>{formatMoney(baseValue)}</div>
+              <div style={{ fontSize: 13, fontWeight: 800, color: '#DC2626', background: '#FEE2E2', padding: '2px 8px', borderRadius: 10 }}>
+                -{Math.round(flashDiscount * 100)}%
+              </div>
+            </div>
+            <div style={{ fontSize: 12, fontWeight: 600, color: '#92400E', marginTop: 6 }}>
+              You save {formatMoney(baseValue - value)} — don't miss this deal!
+            </div>
+          </div>
+        )}
 
         {/* About */}
         <div style={{
@@ -348,23 +402,37 @@ export default function CompanyCard({
         {/* Action buttons */}
         <div style={{ display: 'flex', gap: 10 }}>
           {!owned && (
-            <button
-              onClick={() => onBuy && onBuy(companyId)}
-              disabled={!!actionTaken}
-              style={{
-                flex: 1, padding: '15px',
-                background: actionTaken
-                  ? '#E5E7EB'
-                  : 'linear-gradient(135deg, #16A34A, #22C55E)',
-                color: actionTaken ? '#9CA3AF' : '#fff',
-                border: 'none', borderRadius: 14,
-                fontSize: 16, fontWeight: 900,
-                fontFamily: 'inherit', cursor: actionTaken ? 'default' : 'pointer',
-                boxShadow: actionTaken ? 'none' : '0 4px 14px rgba(34,197,94,0.4)',
-              }}
-            >
-              {actionTaken ? '✓ Done this turn' : `Buy · ${formatMoney(value)}`}
-            </button>
+            <div style={{ flex: 1 }}>
+              <button
+                onClick={() => canAfford && !actionTaken && onBuy && onBuy(companyId)}
+                disabled={!!actionTaken || !canAfford}
+                style={{
+                  width: '100%', padding: '15px',
+                  background: actionTaken
+                    ? '#E5E7EB'
+                    : !canAfford
+                    ? 'linear-gradient(135deg, #94A3B8, #CBD5E1)'
+                    : 'linear-gradient(135deg, #16A34A, #22C55E)',
+                  color: (actionTaken || !canAfford) ? '#fff' : '#fff',
+                  border: 'none', borderRadius: 14,
+                  fontSize: 15, fontWeight: 900,
+                  fontFamily: 'inherit',
+                  cursor: (actionTaken || !canAfford) ? 'default' : 'pointer',
+                  boxShadow: (actionTaken || !canAfford) ? 'none' : '0 4px 14px rgba(34,197,94,0.4)',
+                }}
+              >
+                {actionTaken
+                  ? '✓ Done this turn'
+                  : !canAfford
+                  ? `Need ${formatMoney(shortfall)} more`
+                  : `Buy · ${formatMoney(value)}`}
+              </button>
+              {!canAfford && !actionTaken && (
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#94A3B8', textAlign: 'center', marginTop: 5 }}>
+                  You have {formatMoney(cash)} · need {formatMoney(value)}
+                </div>
+              )}
+            </div>
           )}
 
           {owned && (

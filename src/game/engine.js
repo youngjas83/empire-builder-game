@@ -49,8 +49,11 @@ export function createInitialGameState(empireName, difficulty) {
   const companyStates = createInitialCompanyStates()
   const economy = { state: 'steady', turnsLeft: 4, preSignal: null }
   const sectorCycles = {
-    consumer:   { state: 'normal', turnsLeft: 4 },
-    realEstate: { state: 'normal', turnsLeft: 4 },
+    consumer:      { state: 'normal', turnsLeft: 4 },
+    realEstate:    { state: 'normal', turnsLeft: 4 },
+    entertainment: { state: 'normal', turnsLeft: 4 },
+    tech:          { state: 'normal', turnsLeft: 4 },
+    industrials:   { state: 'normal', turnsLeft: 4 },
   }
   const firstNews = generateNews(economy, sectorCycles, [], 1)
 
@@ -59,10 +62,10 @@ export function createInitialGameState(empireName, difficulty) {
     empireName,
     difficulty,
     turn: 1,
-    cash: 10000000,
+    cash: 30000000,
     portfolio: {},
     companyStates,
-    netWorthHistory: [10000000],
+    netWorthHistory: [30000000],
     economy,
     sectorCycles,
     turnPhase: 'news',
@@ -84,6 +87,7 @@ export function createInitialGameState(empireName, difficulty) {
     chipMood: 'happy',
     chipMessage: '',
     justLeveledUp: null,
+    flashSale: null,
   }
 }
 
@@ -160,11 +164,17 @@ export function resolveEndTurn(state) {
     cs.multiplier = cs.multiplier * (1 + econRates.mult * co.multSens)
 
     // Layer 2: Sector cycle
-    const sectorState = sectorCycles[co.sector]
-    if (sectorState) {
-      const sectRates = SECTOR_RATES[sectorState.state] || SECTOR_RATES.normal
+    const sectorCycleData = sectorCycles[co.sector]
+    if (sectorCycleData) {
+      const sectRates = SECTOR_RATES[sectorCycleData.state] || SECTOR_RATES.normal
       cs.profit = cs.profit * (1 + sectRates.profit * co.profSens)
       cs.multiplier = cs.multiplier * (1 + sectRates.mult * co.multSens)
+    }
+
+    // Layer 2b: Active downturn decay — multiplier bleeds -0.5/turn during sector downturn
+    // This creates real exit pressure beyond just reduced growth
+    if (sectorCycleData && sectorCycleData.state === 'downturn') {
+      cs.multiplier = cs.multiplier - 0.5
     }
 
     // Clamp profit to floor (10% of base)
@@ -258,16 +268,33 @@ export function resolveEndTurn(state) {
     }
   }
 
-  // 7. Next turn's news
+  // 7. Flash sale management
+  let flashSale = state.flashSale || null
+  let newFlashSale = flashSale ? { ...flashSale, turnsLeft: flashSale.turnsLeft - 1 } : null
+  if (newFlashSale && newFlashSale.turnsLeft <= 0) newFlashSale = null
+
+  // 8% chance to start a new flash sale when none is active
+  if (!newFlashSale && Math.random() < 0.08) {
+    const eligible = COMPANIES.filter(co =>
+      !updatedPortfolio[co.id] && !co.badges.includes('inDecline')
+    )
+    if (eligible.length > 0) {
+      const target = eligible[Math.floor(Math.random() * eligible.length)]
+      newFlashSale = { companyId: target.id, turnsLeft: 2, discount: 0.20 }
+    }
+  }
+
+  // 8. Next turn's news
   const nextTurn = turn + 1
   const newNews = generateNews(
     newEconomy,
     newSectorCycles,
     Object.keys(updatedPortfolio),
-    nextTurn
+    nextTurn,
+    newFlashSale
   )
 
-  // 8. Net worth + level
+  // 9. Net worth + level
   const newNetWorth = calcNetWorth(cash, updatedPortfolio, companyStates)
   const newNetWorthHistory = [...netWorthHistory.slice(-19), newNetWorth]
   const newLevel = calcLevel(newNetWorth)
@@ -285,6 +312,7 @@ export function resolveEndTurn(state) {
     turnPhase: 'news',
     turnActions: {},
     currentNews: newNews,
+    flashSale: newFlashSale,
     showNewsModal: !wildCard,
     wildCard,
     showWildCard: !!wildCard,
@@ -334,7 +362,11 @@ export function buyCompany(state, companyId) {
   if (!co) return state
 
   const currentValue = calcCompanyValue(companyId, state.companyStates)
-  const price = currentValue
+
+  // Apply flash sale discount if this company is on sale
+  const flashSale = state.flashSale
+  const hasFlashSale = flashSale && flashSale.companyId === companyId
+  const price = hasFlashSale ? Math.round(currentValue * (1 - flashSale.discount)) : currentValue
 
   if (state.cash < price) return state
   if (state.portfolio[companyId]) return state
@@ -345,6 +377,7 @@ export function buyCompany(state, companyId) {
       locations: 1,
       purchasePrice: price,
       profitsCollected: 0,
+      locationSpend: 0,
       purchaseTurn: state.turn,
     },
   }
@@ -353,6 +386,7 @@ export function buyCompany(state, companyId) {
     ...state,
     cash: state.cash - price,
     portfolio: newPortfolio,
+    flashSale: hasFlashSale ? null : state.flashSale,
     turnActions: { ...state.turnActions, [companyId]: 'buy' },
     actionDialog: null,
     viewingCompany: null,
@@ -398,6 +432,7 @@ export function openLocation(state, companyId) {
     [companyId]: {
       ...entry,
       locations: entry.locations + 1,
+      locationSpend: (entry.locationSpend || 0) + cost,
     },
   }
 
@@ -406,6 +441,33 @@ export function openLocation(state, companyId) {
     cash: state.cash - cost,
     portfolio: newPortfolio,
     turnActions: { ...state.turnActions, [companyId]: 'openLocation' },
+    actionDialog: null,
+  }
+}
+
+export function sellLocation(state, companyId) {
+  const entry = state.portfolio[companyId]
+  if (!entry || entry.locations <= 1) return state  // HQ cannot be sold
+
+  const co = COMPANIES.find(c => c.id === companyId)
+  if (!co) return state
+
+  const cs = state.companyStates[companyId]
+  const currentValue = Math.round(cs.profit * cs.multiplier)
+  const salePrice = Math.round(currentValue * co.locationCost)
+
+  return {
+    ...state,
+    cash: state.cash + salePrice,
+    portfolio: {
+      ...state.portfolio,
+      [companyId]: {
+        ...entry,
+        locations: entry.locations - 1,
+        locationSpend: Math.max(0, (entry.locationSpend || 0) - salePrice),
+      },
+    },
+    turnActions: { ...state.turnActions, [companyId]: 'sellLocation' },
     actionDialog: null,
   }
 }
@@ -425,6 +487,12 @@ const WILD_CARD_TEXTS = {
   towerone: "TowerOne lands massive 5-year lease with Fortune 500 company!",
   warehousex: "WarehouseX wins 10-year contract with nation's biggest retailer!",
   sunvilla: "SunVilla voted #1 Resort — bookings up 200% overnight!",
+  streamflix: "StreamFlix lands exclusive deal with the world's biggest director — subscribers surge!",
+  thunderfc: "Thunder FC wins the Champions League — global merchandise revenue EXPLODES!",
+  gameboxstudios: "GameBox Studios' new title breaks all sales records in its first 48 hours!",
+  celebbuzz: "CelebBuzz client goes mega-viral — agency fees quadruple overnight!",
+  soundwave: "SoundWave's headlining artist breaks streaming records — royalty windfall!",
+  nightowl: "NightOwl Cinemas lands exclusive blockbuster premiere rights for the summer!",
 }
 
 const SETBACK_TEXTS = {
@@ -433,6 +501,9 @@ const SETBACK_TEXTS = {
   pixelwear: "PixelWear latest drop gets roasted online — returns flooding in!",
   megamall: "MegaMall anchor tenant just announced store closure!",
   towerone: "TowerOne major tenant announces work-from-home permanently!",
+  gameboxstudios: "GameBox Studios' latest release gets review-bombed — sales collapse!",
+  celebbuzz: "CelebBuzz top client in scandal — agency reputation takes a hit!",
+  nightowl: "NightOwl Cinemas loses exclusive deal to a streaming service!",
 }
 
 function getWildCardText(id, co) {

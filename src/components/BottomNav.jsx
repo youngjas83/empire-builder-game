@@ -17,7 +17,7 @@ export default function BottomNav({ activeTab, onTabChange }) {
       borderTop: '1px solid rgba(0,0,0,0.08)',
       display: 'flex',
       paddingBottom: 'env(safe-area-inset-bottom, 0px)',
-      zIndex: 100,
+      zIndex: 200,
       backdropFilter: 'blur(20px)',
       WebkitBackdropFilter: 'blur(20px)',
     }}>

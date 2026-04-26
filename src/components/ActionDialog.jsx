@@ -5,28 +5,33 @@ import { COMPANIES } from '../data/companies.js'
 export default function ActionDialog({ dialog, cash, onConfirm, onCancel }) {
   if (!dialog) return null
 
-  const { type, companyId, cost, proceeds, cashAfter } = dialog
+  const { type, companyId, cost, proceeds, cashAfter, valueAdded } = dialog
   const co = COMPANIES.find(c => c.id === companyId)
   if (!co) return null
 
-  const isSell = type === 'sell'
-  const isBuy = type === 'buy'
+  const isSell         = type === 'sell'
+  const isBuy          = type === 'buy'
   const isOpenLocation = type === 'openLocation'
+  const isSellLocation = type === 'sellLocation'
 
-  const actionLabel = isBuy ? 'Buy' : isSell ? 'Sell' : 'Open Location'
-  const actionColor = isSell ? '#EF4444' : '#22C55E'
-  const actionBg = isSell
+  const actionLabel = isBuy          ? 'Buy'
+    : isSell         ? 'Sell Company'
+    : isSellLocation ? 'Sell Location'
+    : 'Open Location'
+
+  const actionColor = (isSell || isSellLocation) ? '#EF4444' : '#22C55E'
+  const actionBg    = (isSell || isSellLocation)
     ? 'linear-gradient(135deg, #DC2626, #EF4444)'
     : 'linear-gradient(135deg, #16A34A, #22C55E)'
 
-  const amount = isSell ? proceeds : cost
+  const amount = (isSell || isSellLocation) ? proceeds : cost
   const cashSpendPct = isBuy && cash > 0 ? Math.round((cost / cash) * 100) : null
 
   return (
     <div
       onClick={onCancel}
       style={{
-        position: 'fixed', inset: 0, zIndex: 200,
+        position: 'fixed', inset: 0, zIndex: 300,
         background: 'rgba(0,0,10,0.65)',
         display: 'flex', alignItems: 'flex-end',
         backdropFilter: 'blur(4px)',
@@ -77,10 +82,10 @@ export default function ActionDialog({ dialog, cash, onConfirm, onCancel }) {
             display: 'flex', justifyContent: 'space-between', alignItems: 'center',
           }}>
             <span style={{ fontSize: 14, fontWeight: 700, color: '#6B7280' }}>
-              {isSell ? 'You receive' : 'Cost'}
+              {(isSell || isSellLocation) ? 'You receive' : 'Cost'}
             </span>
             <span style={{ fontSize: 22, fontWeight: 900, color: actionColor }}>
-              {isSell ? '+' : ''}{formatMoney(amount)}
+              {(isSell || isSellLocation) ? '+' : ''}{formatMoney(amount)}
             </span>
           </div>
 
@@ -105,14 +110,46 @@ export default function ActionDialog({ dialog, cash, onConfirm, onCancel }) {
             </span>
           </div>
 
+          {/* Open Location: Chip-style arbitrage insight */}
           {isOpenLocation && (
             <div style={{
-              background: '#EFF6FF', borderRadius: 10, padding: '10px 16px',
-              fontSize: 13, color: '#1D4ED8', fontWeight: 700,
-              display: 'flex', alignItems: 'center', gap: 8,
+              background: 'linear-gradient(135deg, #EFF6FF, #E0E7FF)',
+              border: '1.5px solid #BFDBFE',
+              borderRadius: 12, padding: '12px 14px',
+              display: 'flex', gap: 10, alignItems: 'flex-start',
             }}>
-              <span>📈</span>
-              <span>Adds +30% profit per turn permanently</span>
+              <span style={{ fontSize: 22, flexShrink: 0, marginTop: 1 }}>🤖</span>
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 900, color: '#1D4ED8', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 4 }}>
+                  Chip's Arbitrage Math
+                </div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#1E293B', lineHeight: 1.55 }}>
+                  You pay <strong>{formatMoney(cost)}</strong> now and get{' '}
+                  <strong style={{ color: '#16A34A' }}>+{formatMoney(valueAdded || 0)}</strong>{' '}
+                  added to the company's value permanently.
+                  That's like buying growth at market price — and the extra profit compounds every turn!
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Sell Location: reassurance note */}
+          {isSellLocation && (
+            <div style={{
+              background: '#FFF7ED',
+              border: '1.5px solid #FDBA74',
+              borderRadius: 12, padding: '12px 14px',
+              display: 'flex', gap: 10, alignItems: 'flex-start',
+            }}>
+              <span style={{ fontSize: 22, flexShrink: 0, marginTop: 1 }}>🤖</span>
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 900, color: '#EA580C', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 4 }}>
+                  Chip's Note
+                </div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#1E293B', lineHeight: 1.55 }}>
+                  You'll sell one branch at today's market price. You keep all the profits it already generated. Good move if you need liquidity fast!
+                </div>
+              </div>
             </div>
           )}
         </div>

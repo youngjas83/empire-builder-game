@@ -2,7 +2,7 @@ import React from 'react'
 import { COMPANIES, SECTORS } from '../data/companies.js'
 import { formatMoney, getSectorStateLabel, getSectorStateColor } from '../game/engine.js'
 
-export default function SectorView({ sectorId, companyStates, portfolio, turnActions, sectorCycles, onSelectCompany, onBack }) {
+export default function SectorView({ sectorId, companyStates, portfolio, turnActions, sectorCycles, flashSale, onSelectCompany, onBack }) {
   const sector = SECTORS[sectorId]
   if (!sector) return null
 
@@ -78,10 +78,13 @@ export default function SectorView({ sectorId, companyStates, portfolio, turnAct
       <div style={{ padding: '12px 12px 100px' }}>
         {companies.map(co => {
           const cs = companyStates[co.id] || { profit: co.baseProfit, multiplier: co.baseMultiplier }
-          const value = Math.round(cs.profit * cs.multiplier)
+          const baseValue = Math.round(cs.profit * cs.multiplier)
           const owned = portfolio[co.id]
           const actionTaken = turnActions && turnActions[co.id]
           const isDecline = co.badges.includes('inDecline')
+          const isOnFlashSale = !owned && flashSale && flashSale.companyId === co.id
+          const flashDiscount = isOnFlashSale ? flashSale.discount : 0
+          const value = isOnFlashSale ? Math.round(baseValue * (1 - flashDiscount)) : baseValue
 
           return (
             <button
@@ -130,6 +133,15 @@ export default function SectorView({ sectorId, companyStates, portfolio, turnAct
                         OWNED
                       </span>
                     )}
+                    {isOnFlashSale && (
+                      <span style={{
+                        fontSize: 10, fontWeight: 900, color: '#92400E',
+                        background: '#FEF3C7', padding: '2px 7px', borderRadius: 6,
+                        border: '1px solid #FCD34D',
+                      }}>
+                        ⚡ {Math.round(flashDiscount * 100)}% OFF
+                      </span>
+                    )}
                     {isDecline && !owned && (
                       <span style={{
                         fontSize: 10, fontWeight: 900, color: '#DC2626',
@@ -141,13 +153,18 @@ export default function SectorView({ sectorId, companyStates, portfolio, turnAct
                     )}
                   </div>
                 </div>
-                <div style={{ display: 'flex', gap: 12, marginBottom: 6 }}>
+                <div style={{ display: 'flex', gap: 8, marginBottom: 6, alignItems: 'center', flexWrap: 'wrap' }}>
                   <span style={{ fontSize: 13, fontWeight: 800, color: '#16A34A' }}>
                     {formatMoney(cs.profit)}/turn
                   </span>
-                  <span style={{ fontSize: 13, fontWeight: 800, color: '#1D4ED8' }}>
+                  <span style={{ fontSize: 13, fontWeight: 800, color: isOnFlashSale ? '#D97706' : '#1D4ED8' }}>
                     {formatMoney(value)}
                   </span>
+                  {isOnFlashSale && (
+                    <span style={{ fontSize: 11, fontWeight: 700, color: '#9CA3AF', textDecoration: 'line-through' }}>
+                      {formatMoney(baseValue)}
+                    </span>
+                  )}
                 </div>
                 <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
                   {co.badges.slice(0, 2).map(b => {
