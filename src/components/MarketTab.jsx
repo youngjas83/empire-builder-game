@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { COMPANIES, SECTORS } from '../data/companies.js'
 import Sparkline from './Sparkline.jsx'
 import {
@@ -10,6 +10,9 @@ export default function MarketTab({
   economy, sectorCycles, netWorthHistory, cash, difficulty, level,
   portfolio, companyStates, onSelectCompany,
 }) {
+  const [showMOIC, setShowMOIC] = useState(true)
+  const [showMOICTooltip, setShowMOICTooltip] = useState(false)
+
   const econColor = getEconomyColor(economy.state)
   const interestRate = difficulty === 'easy' ? 3 : difficulty === 'hard' ? 1 : 2
   const netWorth = calcNetWorth(cash, portfolio, companyStates)
@@ -19,6 +22,7 @@ export default function MarketTab({
   const startNW = netWorthHistory[0] || 10000000
   const nwGrowth = netWorth - startNW
   const nwGrowthPct = startNW > 0 ? Math.round((nwGrowth / startNW) * 100) : 0
+  const moic = startNW > 0 ? (netWorth / startNW).toFixed(2) : '1.00'
 
   return (
     <div style={{ height: '100%', overflowY: 'auto', paddingBottom: 90 }}>
@@ -66,13 +70,38 @@ export default function MarketTab({
             <div style={{ fontSize: 12, fontWeight: 800, color: '#374151', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
               📈 Net Worth History
             </div>
-            <div style={{
-              fontSize: 12, fontWeight: 800,
-              color: nwGrowth >= 0 ? '#16A34A' : '#DC2626',
-              background: nwGrowth >= 0 ? '#F0FDF4' : '#FEF2F2',
-              padding: '2px 8px', borderRadius: 10,
-            }}>
-              {nwGrowth >= 0 ? '+' : ''}{nwGrowthPct}% all time
+            <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+              {/* MOIC tooltip */}
+              {showMOICTooltip && (
+                <div style={{
+                  position: 'absolute', right: 60, top: 0,
+                  background: '#1E293B', color: '#fff', borderRadius: 10,
+                  padding: '8px 12px', fontSize: 12, fontWeight: 600,
+                  width: 200, lineHeight: 1.5, zIndex: 10,
+                  boxShadow: '0 4px 16px rgba(0,0,0,0.2)',
+                }}>
+                  <strong>MOIC</strong> = Multiple on Invested Capital. Shows how many times you've multiplied your starting money. 2×= doubled, 10×= 10× your money.
+                </div>
+              )}
+              <button
+                onClick={() => setShowMOICTooltip(t => !t)}
+                style={{
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  fontSize: 14, color: '#9CA3AF', padding: 0, fontFamily: 'inherit',
+                }}
+              >ℹ️</button>
+              <button
+                onClick={() => setShowMOIC(m => !m)}
+                style={{
+                  fontSize: 12, fontWeight: 800,
+                  color: nwGrowth >= 0 ? '#16A34A' : '#DC2626',
+                  background: nwGrowth >= 0 ? '#F0FDF4' : '#FEF2F2',
+                  padding: '2px 8px', borderRadius: 10,
+                  border: 'none', cursor: 'pointer', fontFamily: 'inherit',
+                }}
+              >
+                {showMOIC ? `${moic}× your money` : `${nwGrowth >= 0 ? '+' : ''}${nwGrowthPct}% all time`}
+              </button>
             </div>
           </div>
           {netWorthHistory.length > 1 ? (

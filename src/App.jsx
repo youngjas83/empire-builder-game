@@ -168,19 +168,8 @@ export default function App() {
       }
 
       if (s.setupStep === 1) {
-        return { ...s, setupStep: 2, chipIntroStep: 0 }
-      }
-
-      if (s.setupStep === 2) {
-        if (s.chipIntroStep < 4) {
-          return { ...s, chipIntroStep: s.chipIntroStep + 1 }
-        }
-        // Launch game
-        const gameState = createInitialGameState(
-          s.empireName.trim(),
-          s.selectedDifficulty
-        )
-        return gameState
+        // Launch game directly — no Chip intro slides
+        return createInitialGameState(s.empireName.trim(), s.selectedDifficulty)
       }
 
       return s
@@ -204,7 +193,13 @@ export default function App() {
   }
 
   function handleSelectCompany(companyId) {
-    setAppState(s => ({ ...s, viewingCompany: companyId, viewingCompanyBack: false }))
+    setAppState(s => ({
+      ...s,
+      viewingCompany: companyId,
+      viewingCompanyBack: false,
+      // Guide step 0→1: player tapped a company for the first time
+      chipGuideStep: s.chipGuideStep === 0 ? 1 : s.chipGuideStep,
+    }))
   }
 
   function handleBackFromCompany() {
@@ -303,7 +298,12 @@ export default function App() {
       let newState
       if (actionDialog.type === 'buy') {
         newState = buyCompany(prev, actionDialog.companyId)
-        newState = { ...newState, showBuyToast: actionDialog.companyId }
+        newState = {
+          ...newState,
+          showBuyToast: actionDialog.companyId,
+          // Guide step 1→2: player just bought their first company
+          chipGuideStep: prev.chipGuideStep === 1 ? 2 : prev.chipGuideStep,
+        }
         SFX.buy()
       } else if (actionDialog.type === 'sell') {
         newState = sellCompany(prev, actionDialog.companyId)
@@ -334,6 +334,10 @@ export default function App() {
     SFX.endTurn()
     setAppState(prev => {
       const next = resolveEndTurn(prev)
+      // Guide step 2→3: player ended their first turn with owned companies
+      if (prev.chipGuideStep === 2 && Object.keys(prev.portfolio).length > 0) {
+        next.chipGuideStep = 3
+      }
       // Play earn sound
       if (next.earnedThisTurn > 0) {
         setTimeout(() => {
@@ -385,7 +389,12 @@ export default function App() {
 
   function handleCloseNews() {
     SFX.newsOpen()
-    setAppState(s => ({ ...s, showNewsModal: false }))
+    setAppState(s => ({
+      ...s,
+      showNewsModal: false,
+      // Guide step 3→4: player dismissed the news modal after seeing step 3
+      chipGuideStep: s.chipGuideStep === 3 ? 4 : s.chipGuideStep,
+    }))
   }
 
   // ── Earn animation ────────────────────────────────────────────────────────────
@@ -504,7 +513,6 @@ export default function App() {
     return (
       <SetupFlow
         setupStep={appState.setupStep}
-        chipIntroStep={appState.chipIntroStep}
         empireName={appState.empireName}
         selectedDifficulty={appState.selectedDifficulty}
         onSetName={handleSetName}
@@ -526,8 +534,9 @@ export default function App() {
     economy, sectorCycles, netWorthHistory, level, cash, flashSale,
     currentNews, turn, difficulty, chipSubTab, chipSearch, expandedQuestion,
     showEarnAnimation, earnedThisTurn, showBuyToast, showEconomyModal,
-    smartTrade, showSectorUnlock, newAchievement, profitStreak,
+    smartTrade, showSectorUnlock, newAchievement,
     showBillionScreen, onboardingDismissed,
+    chipGuideStep, companyNewsEffects,
   } = appState
 
   const netWorth = calcNetWorth(cash, portfolio, companyStates)
@@ -580,6 +589,8 @@ export default function App() {
             onBadgeTap={handleBadgeTap}
             onBack={handleBackFromCompany}
             onViewDetails={handleViewCompanyDetails}
+            companyNewsEffects={companyNewsEffects}
+            chipGuideStep={chipGuideStep}
           />
         )}
 
@@ -594,6 +605,9 @@ export default function App() {
             flashSale={flashSale}
             onSelectCompany={handleSelectCompany}
             onBack={handleBackFromSector}
+            cash={cash}
+            netWorth={netWorth}
+            companyNewsEffects={companyNewsEffects}
           />
         )}
 
@@ -615,6 +629,10 @@ export default function App() {
                 currentNews={currentNews}
                 economy={economy}
                 turn={turn}
+                onSelectCompany={id => {
+                  handleSelectCompany(id)
+                  setAppState(s => ({ ...s, activeTab: 'empire' }))
+                }}
               />
             )}
             {activeTab === 'market' && (
@@ -662,6 +680,9 @@ export default function App() {
           currentNews={currentNews}
           economy={economy}
           sectorCycles={sectorCycles}
+          difficulty={difficulty}
+          level={level}
+          chipGuideStep={chipGuideStep}
           onClose={handleCloseNews}
           onSelectCompany={id => {
             handleCloseNews()

@@ -1,7 +1,16 @@
 import React from 'react'
 import { SECTORS, LEVELS, COMPANIES } from '../data/companies.js'
-import { formatMoney, calcNetWorth, calcProfitPerTurn, getEconomyLabel, getEconomyColor, getSectorStateColor, getSectorStateLabel } from '../game/engine.js'
+import { formatMoney, calcNetWorth, calcProfitPerTurn, getEconomyLabel, getEconomyColor, getSectorStateColor } from '../game/engine.js'
 import Chip from './Chip.jsx'
+
+function getSectorCycleBadgeLabel(cycle) {
+  if (!cycle) return '🟡 Normal'
+  if (cycle.state === 'boom') return '🟢 Boom'
+  if (cycle.state === 'downturn') return '🔴 Downturn'
+  if (cycle.preSignal === 'preSlowdown') return '🟡 Normal · ⚠️ Slowing'
+  if (cycle.preSignal === 'preBoom') return '🟡 Normal · 🌱 Recovering'
+  return '🟡 Normal'
+}
 
 export default function EmpireTab({
   state,
@@ -13,7 +22,7 @@ export default function EmpireTab({
 }) {
   const {
     empireName, turn, cash, portfolio, companyStates,
-    economy, sectorCycles, level, turnActions, profitStreak,
+    economy, sectorCycles, level, turnActions,
   } = state
 
   const netWorth = calcNetWorth(cash, portfolio, companyStates)
@@ -227,10 +236,12 @@ export default function EmpireTab({
             </div>
             <div>
               <div style={{ fontSize: 15, fontWeight: 900, color: '#1E293B', marginBottom: 3 }}>
-                Put your $10M to work!
+                {state.chipGuideStep === 0 ? 'Tap Consumer Market to start!' : 'Put your $10M to work!'}
               </div>
               <div style={{ fontSize: 12, fontWeight: 600, color: '#6B7280', lineHeight: 1.45 }}>
-                Tap a sector below to browse companies and make your first investment.
+                {state.chipGuideStep === 0
+                  ? "Pick a company, hit Buy, and you'll collect profit every turn. Let's go!"
+                  : 'Tap a sector below to browse companies and make your first investment.'}
               </div>
             </div>
           </div>
@@ -330,7 +341,7 @@ export default function EmpireTab({
                     padding: '2px 8px', borderRadius: 10,
                     flexShrink: 0,
                   }}>
-                    {getSectorStateLabel(sectorState)}
+                    {getSectorCycleBadgeLabel(sectorCycle)}
                   </div>
                 </div>
 
@@ -371,14 +382,18 @@ export default function EmpireTab({
         width: 'calc(100% - 32px)', maxWidth: 398,
         zIndex: 110,
       }}>
-        {/* Streak badge */}
-        {profitStreak >= 3 && (
+        {/* Guide tip: step 2 — hit End Turn */}
+        {state.chipGuideStep === 2 && companiesOwned > 0 && (
           <div style={{
-            textAlign: 'center', marginBottom: 6,
-            fontSize: 13, fontWeight: 900,
-            color: profitStreak >= 7 ? '#DC2626' : '#D97706',
+            background: 'linear-gradient(135deg, #16A34A, #22C55E)',
+            borderRadius: 12, padding: '10px 14px',
+            marginBottom: 8,
+            display: 'flex', alignItems: 'center', gap: 8,
           }}>
-            {'🔥'.repeat(Math.min(profitStreak, 5))} {profitStreak}-turn profit streak!
+            <span style={{ fontSize: 22 }}>🤖</span>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', lineHeight: 1.4 }}>
+              Nice buy! Now hit <strong>End Turn</strong> to collect your first profit →
+            </div>
           </div>
         )}
         <button

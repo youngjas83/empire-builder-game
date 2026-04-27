@@ -1,5 +1,4 @@
 import React from 'react'
-import Chip from './Chip.jsx'
 import { formatMoney } from '../game/engine.js'
 
 function getSavedGame() {
@@ -45,35 +44,7 @@ const DIFFICULTY_OPTIONS = [
   },
 ]
 
-const CHIP_INTRO_STEPS = [
-  {
-    mood: 'excited',
-    title: "Hi! I'm Chip 🤖",
-    text: "Your robot investing coach! We're going from $10 Million to $1 Billion together. Let's absolutely crush it! 💪",
-  },
-  {
-    mood: 'happy',
-    title: 'Collect Profits Each Turn',
-    text: "Every turn, your companies earn profit — money straight into your pocket. Hit End Turn to collect and watch your empire grow!",
-  },
-  {
-    mood: 'thinking',
-    title: 'Profit × Multiplier = Value',
-    text: "A company earning $200K/turn with a 20× multiplier is worth $4 Million. Simple math — big money! More locations = more profit.",
-  },
-  {
-    mood: 'excited',
-    title: 'Race to $1 Billion!',
-    text: "Your Net Worth = cash + all your company values. Grow it from $10M to $1 Billion to win. That's 100× your starting cash!",
-  },
-  {
-    mood: 'happy',
-    title: 'Diversify to Dominate',
-    text: "Own companies in different sectors so one bad market can't wipe you out. Now go build that billion-dollar empire! 🏙️",
-  },
-]
-
-export default function SetupFlow({ setupStep, empireName, chipIntroStep, selectedDifficulty, onSetName, onSelectDifficulty, onAdvance, onContinue, onNewGame }) {
+export default function SetupFlow({ setupStep, empireName, selectedDifficulty, onSetName, onSelectDifficulty, onAdvance, onContinue, onNewGame }) {
 
   // ── Step -1: Landing / Continue screen ───────────────────────────────────────
   if (setupStep === -1) {
@@ -391,88 +362,6 @@ export default function SetupFlow({ setupStep, empireName, chipIntroStep, select
             Play as {selected ? selected.label : ''} →
           </button>
         </div>
-      </div>
-    )
-  }
-
-  // ── Step 2: Meet Chip ─────────────────────────────────────────────────────────
-  if (setupStep === 2) {
-    const step = CHIP_INTRO_STEPS[chipIntroStep]
-    const totalSteps = CHIP_INTRO_STEPS.length
-    const isLast = chipIntroStep === totalSteps - 1
-
-    return (
-      <div style={{
-        minHeight: '100vh',
-        background: 'linear-gradient(160deg, #0F172A 0%, #1E293B 100%)',
-        display: 'flex', flexDirection: 'column',
-        alignItems: 'center', justifyContent: 'center',
-        padding: '32px 24px',
-        position: 'relative', overflow: 'hidden',
-      }}>
-        {/* Glow accent */}
-        <div style={{
-          position: 'absolute', top: '20%', left: '50%',
-          transform: 'translateX(-50%)',
-          width: 300, height: 300, borderRadius: '50%',
-          background: 'rgba(124,58,237,0.12)', filter: 'blur(80px)',
-          pointerEvents: 'none',
-        }} />
-
-        {/* Chip character */}
-        <div style={{ filter: 'drop-shadow(0 8px 32px rgba(29,78,216,0.4))', position: 'relative', zIndex: 1 }}>
-          <Chip mood={step.mood} size={140} />
-        </div>
-
-        {/* Message card */}
-        <div style={{
-          background: '#fff', borderRadius: 22,
-          padding: '24px 22px', marginTop: 24, marginBottom: 28,
-          width: '100%', maxWidth: 340,
-          boxShadow: '0 12px 48px rgba(0,0,0,0.4)',
-          position: 'relative', zIndex: 1,
-        }}>
-          <div style={{ fontSize: 20, fontWeight: 900, color: '#1E293B', marginBottom: 10 }}>
-            {step.title}
-          </div>
-          <p style={{ fontSize: 15, fontWeight: 600, color: '#374151', lineHeight: 1.6, margin: 0 }}>
-            {step.text}
-          </p>
-        </div>
-
-        {/* Step dots */}
-        <div style={{ display: 'flex', gap: 8, marginBottom: 24, position: 'relative', zIndex: 1 }}>
-          {CHIP_INTRO_STEPS.map((_, i) => (
-            <div key={i} style={{
-              width: i === chipIntroStep ? 22 : 8, height: 8,
-              borderRadius: 4,
-              background: i === chipIntroStep ? '#FCD34D' : 'rgba(255,255,255,0.25)',
-              transition: 'all 0.25s ease',
-            }} />
-          ))}
-        </div>
-
-        <button
-          onClick={onAdvance}
-          style={{
-            width: '100%', maxWidth: 300,
-            padding: '16px',
-            background: isLast
-              ? 'linear-gradient(135deg, #16A34A, #22C55E)'
-              : 'linear-gradient(135deg, #FCD34D, #FBBF24)',
-            color: isLast ? '#fff' : '#1E293B',
-            border: 'none', borderRadius: 16,
-            fontSize: 17, fontWeight: 900,
-            fontFamily: 'inherit', cursor: 'pointer',
-            boxShadow: isLast
-              ? '0 6px 24px rgba(34,197,94,0.45)'
-              : '0 6px 24px rgba(252,211,77,0.45)',
-            position: 'relative', zIndex: 1,
-            transition: 'all 0.2s',
-          }}
-        >
-          {isLast ? "Let's Go! 🚀" : "Next →"}
-        </button>
       </div>
     )
   }

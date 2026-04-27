@@ -196,6 +196,49 @@ export default function CompanyCardBack({
           )}
         </div>
 
+        {/* Location Arbitrage Explanation */}
+        {entry.locations < 5 && (() => {
+          const newLocMult    = calcLocationsMultiplier(entry.locations + 1)
+          const currentProfit = Math.round(cs.profit * locMult)
+          const newValue      = Math.round(currentValue * newLocMult)
+          const valueGained   = newValue - totalValue
+          const extraProfit   = Math.round(cs.profit * (newLocMult - locMult))
+          return (
+            <div style={{
+              background: 'linear-gradient(135deg, #F0FDF4, #ECFDF5)',
+              border: '1.5px solid #86EFAC',
+              borderRadius: 14, padding: '14px',
+              marginBottom: 12,
+              boxShadow: '0 1px 6px rgba(34,197,94,0.1)',
+            }}>
+              <div style={{ fontSize: 12, fontWeight: 800, color: '#15803D', marginBottom: 8 }}>
+                💡 Why Open Another Location?
+              </div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: '#1E293B', lineHeight: 1.6 }}>
+                {co.name} earns <strong>{formatMoney(currentProfit)}/turn</strong> × {Math.round(cs.multiplier)}× = <strong>{formatMoney(totalValue)}</strong> value now.
+              </div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: '#1E293B', lineHeight: 1.6, marginTop: 4 }}>
+                Open a location for <strong>{formatMoney(locationCost)}</strong> → value grows to <strong>{formatMoney(newValue)}</strong>.
+              </div>
+              <div style={{
+                marginTop: 10,
+                background: '#DCFCE7', borderRadius: 10, padding: '9px 12px',
+                display: 'flex', flexDirection: 'column', gap: 3,
+              }}>
+                <div style={{ fontSize: 13, fontWeight: 800, color: '#15803D' }}>
+                  You spend {formatMoney(locationCost)} and gain:
+                </div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#16A34A' }}>
+                  +{formatMoney(valueGained)} in company value
+                </div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#16A34A' }}>
+                  +{formatMoney(extraProfit)}/turn more profit
+                </div>
+              </div>
+            </div>
+          )
+        })()}
+
         {/* Investment breakdown */}
         <div style={{ background: '#fff', borderRadius: 14, padding: '14px', marginBottom: 12, boxShadow: '0 1px 4px rgba(0,0,0,0.05)' }}>
           <div style={{ fontSize: 12, fontWeight: 800, color: '#374151', marginBottom: 12 }}>

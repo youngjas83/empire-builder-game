@@ -1,7 +1,8 @@
 import React from 'react'
 import Chip from './Chip.jsx'
+import { COMPANIES } from '../data/companies.js'
 
-export default function NewsTab({ currentNews, economy, turn }) {
+export default function NewsTab({ currentNews, economy, turn, onSelectCompany }) {
   if (!currentNews || !currentNews.headlines) {
     return (
       <div style={{ padding: '40px 20px', textAlign: 'center', color: '#9CA3AF' }}>
@@ -13,20 +14,28 @@ export default function NewsTab({ currentNews, economy, turn }) {
   const { headlines, chipTake } = currentNews
 
   const tierLabel = {
-    economy: '🌍 Economy',
-    sector: '🏭 Sector',
-    gossip: '📣 Company Gossip',
+    economy:     '🌍 Economy',
+    sector:      '🏭 Sector',
+    companyNews: '📣 Company News',
+    flash:       '⚡ Flash Sale',
   }
 
   const tierColor = {
-    economy: '#1D4ED8',
-    sector: '#7C3AED',
-    gossip: '#EA580C',
+    economy:     '#1D4ED8',
+    sector:      '#7C3AED',
+    companyNews: '#EA580C',
+    flash:       '#B45309',
   }
 
   const mood = economy.state === 'booming' ? 'excited'
     : economy.state === 'slowdown' ? 'worried'
     : 'happy'
+
+  function handleItemClick(item) {
+    if (item.companyId && onSelectCompany) {
+      onSelectCompany(item.companyId)
+    }
+  }
 
   return (
     <div style={{ height: '100%', overflowY: 'auto', paddingBottom: 80 }}>
@@ -45,31 +54,48 @@ export default function NewsTab({ currentNews, economy, turn }) {
       </div>
 
       <div style={{ padding: '12px 14px' }}>
-        {headlines.map((item, i) => (
-          <div
-            key={i}
-            style={{
-              background: '#fff',
-              borderRadius: 12,
-              padding: '12px 14px',
-              marginBottom: 10,
-              borderLeft: `4px solid ${tierColor[item.tier] || '#E2E8F0'}`,
-              boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
-            }}
-          >
-            <div style={{
-              fontSize: 11, fontWeight: 700,
-              color: tierColor[item.tier] || '#9CA3AF',
-              textTransform: 'uppercase', letterSpacing: '0.07em',
-              marginBottom: 5,
-            }}>
-              {tierLabel[item.tier] || item.tier}
+        {headlines.map((item, i) => {
+          const isClickable = !!(item.companyId && onSelectCompany)
+          const color = tierColor[item.tier] || '#9CA3AF'
+          return (
+            <div
+              key={i}
+              onClick={() => isClickable && handleItemClick(item)}
+              style={{
+                background: '#fff',
+                borderRadius: 12,
+                padding: '12px 14px',
+                marginBottom: 10,
+                borderLeft: `4px solid ${color}`,
+                boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+                cursor: isClickable ? 'pointer' : 'default',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
+                <div style={{
+                  fontSize: 11, fontWeight: 700,
+                  color,
+                  textTransform: 'uppercase', letterSpacing: '0.07em',
+                }}>
+                  {tierLabel[item.tier] || item.tier}
+                  {item.tier === 'companyNews' && item.sentiment === 'positive' && ' · +6%'}
+                  {item.tier === 'companyNews' && item.sentiment === 'negative' && ' · −6%'}
+                </div>
+                {isClickable && (() => {
+                  const co = COMPANIES.find(c => c.id === item.companyId)
+                  return co ? (
+                    <span style={{ fontSize: 11, fontWeight: 700, color, opacity: 0.75 }}>
+                      {co.emoji} view →
+                    </span>
+                  ) : null
+                })()}
+              </div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: '#1E293B', lineHeight: 1.4 }}>
+                {item.text}
+              </div>
             </div>
-            <div style={{ fontSize: 15, fontWeight: 700, color: '#1E293B', lineHeight: 1.4 }}>
-              {item.text}
-            </div>
-          </div>
-        ))}
+          )
+        })}
 
         {/* Chip's Take */}
         <div style={{

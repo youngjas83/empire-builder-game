@@ -1,30 +1,27 @@
 import React from 'react'
 import Chip from './Chip.jsx'
-import { COMPANIES } from '../data/companies.js'
+import { COMPANIES, SECTORS } from '../data/companies.js'
+import { getSectorStateColor } from '../game/engine.js'
 
-export default function NewsModal({ turn, currentNews, economy, onClose, onSelectCompany, sectorCycles }) {
+export default function NewsModal({
+  turn, currentNews, economy, onClose, onSelectCompany,
+  sectorCycles, difficulty, level, chipGuideStep,
+}) {
   if (!currentNews) return null
 
   const { headlines, chipTake } = currentNews
-
-  const tierConfig = {
-    economy: { label: '🌍 Economy',    color: '#1D4ED8', bg: '#EFF6FF',  border: '#BFDBFE' },
-    sector:  { label: '🏭 Sector',     color: '#7C3AED', bg: '#F5F3FF',  border: '#C4B5FD' },
-    gossip:  { label: '📣 Gossip',     color: '#EA580C', bg: '#FFF7ED',  border: '#FDBA74' },
-    flash:   { label: '⚡ Flash Sale', color: '#B45309', bg: '#FFFBEB',  border: '#FCD34D' },
-  }
 
   const chipMood = economy.state === 'booming' ? 'excited'
     : economy.state === 'slowdown' ? 'worried'
     : 'happy'
 
-  // Pull out urgent items for the alert banner
-  const flashItems = headlines.filter(h => h.tier === 'flash')
+  // Pull out items by tier
+  const flashItems    = headlines.filter(h => h.tier === 'flash')
+  const companyItems  = headlines.filter(h => h.tier === 'companyNews')
   const downturnItems = headlines.filter(h =>
     h.tier === 'sector' && sectorCycles && sectorCycles[h.sectorId] &&
     (sectorCycles[h.sectorId].state === 'downturn' || sectorCycles[h.sectorId].preSignal === 'preSlowdown')
   )
-  const regularHeadlines = headlines.filter(h => h.tier !== 'flash')
 
   function handleHeadlineClick(item) {
     if (item.companyId && onSelectCompany) {
@@ -32,6 +29,35 @@ export default function NewsModal({ turn, currentNews, economy, onClose, onSelec
       onSelectCompany(item.companyId)
     }
   }
+
+  // Build sector rows for Market Overview card
+  const visibleSectors = Object.values(SECTORS).filter(s => level >= s.unlockLevel)
+  const econState = economy.preSignal || economy.state
+  const econLabel = econState === 'booming' ? '🟢 Booming'
+    : econState === 'slowdown' ? '🔴 Slowdown'
+    : econState === 'preSlowdown' ? '🟡 Steady · ⚠️ Slowing'
+    : econState === 'preBoom' ? '🟡 Steady · 🌱 Recovering'
+    : '🟡 Steady'
+  const econColor = economy.state === 'booming' ? '#16A34A' : economy.state === 'slowdown' ? '#DC2626' : '#D97706'
+
+  function getSectorCycleLabel(cycle) {
+    if (!cycle) return '🟡 Normal'
+    if (cycle.state === 'boom') return '🟢 Boom'
+    if (cycle.state === 'downturn') return '🔴 Downturn'
+    if (cycle.preSignal === 'preSlowdown') return '🟡 Normal · ⚠️ Slowing'
+    if (cycle.preSignal === 'preBoom') return '🟡 Normal · 🌱 Recovering'
+    return '🟡 Normal'
+  }
+
+  function getOverviewRowColor(cycle) {
+    if (!cycle) return null
+    if (cycle.state === 'boom') return '#F0FDF4'
+    if (cycle.state === 'downturn') return '#FEF2F2'
+    if (cycle.preSignal === 'preSlowdown') return '#FFFBEB'
+    return null
+  }
+
+  const showColors = difficulty === 'easy'
 
   return (
     <div style={{
@@ -83,7 +109,25 @@ export default function NewsModal({ turn, currentNews, economy, onClose, onSelec
         {/* Scrollable content */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '12px 12px 4px' }}>
 
-          {/* FLASH SALE ALERT — top priority banner */}
+          {/* Guide step 3 — Chip tip */}
+          {chipGuideStep === 3 && (
+            <div style={{
+              background: 'linear-gradient(135deg, #1D4ED8, #7C3AED)',
+              borderRadius: 14, padding: '12px 14px',
+              marginBottom: 10,
+              display: 'flex', alignItems: 'flex-start', gap: 10,
+            }}>
+              <Chip mood="excited" size={46} />
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 13, fontWeight: 900, color: '#fff', marginBottom: 3 }}>Your profit just landed! 🎉</div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.9)', lineHeight: 1.45 }}>
+                  Every turn, owned companies pay you profit automatically. Check the news, then keep buying and growing! I'll stop interrupting you now — good luck! 💪
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* FLASH SALE ALERT */}
           {flashItems.map((item, i) => {
             const co = item.companyId ? COMPANIES.find(c => c.id === item.companyId) : null
             return (
@@ -117,7 +161,7 @@ export default function NewsModal({ turn, currentNews, economy, onClose, onSelec
             )
           })}
 
-          {/* DOWNTURN ALERT — urgent sector warning */}
+          {/* DOWNTURN ALERT */}
           {downturnItems.length > 0 && (
             <div style={{
               background: 'linear-gradient(135deg, #FEF2F2, #FEE2E2)',
@@ -139,21 +183,65 @@ export default function NewsModal({ turn, currentNews, economy, onClose, onSelec
             </div>
           )}
 
-          {/* Regular headlines */}
-          {regularHeadlines.map((item, i) => {
-            const cfg = tierConfig[item.tier] || { label: item.tier, color: '#6B7280', bg: '#F8FAFC', border: '#E2E8F0' }
+          {/* MARKET OVERVIEW — consolidated economy + sector */}
+          <div style={{
+            background: '#F8FAFC',
+            border: '1.5px solid #E2E8F0',
+            borderRadius: 14, padding: '12px 14px',
+            marginBottom: 10,
+          }}>
+            <div style={{
+              fontSize: 11, fontWeight: 900, color: '#374151',
+              textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8,
+            }}>
+              🌍 Market Overview
+            </div>
+            {/* Economy row */}
+            <div style={{
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              padding: '6px 8px', borderRadius: 8, marginBottom: 4,
+              background: showColors
+                ? (economy.state === 'booming' ? '#F0FDF4' : economy.state === 'slowdown' ? '#FEF2F2' : econState === 'preSlowdown' ? '#FFFBEB' : 'transparent')
+                : 'transparent',
+            }}>
+              <span style={{ fontSize: 13, fontWeight: 700, color: '#374151' }}>🌍 Economy</span>
+              <span style={{ fontSize: 12, fontWeight: 900, color: econColor }}>{econLabel}</span>
+            </div>
+            {/* Sector rows */}
+            {visibleSectors.map(sector => {
+              const cycle = sectorCycles && sectorCycles[sector.id]
+              const label = getSectorCycleLabel(cycle)
+              const rowBg = showColors ? getOverviewRowColor(cycle) : null
+              const sColor = getSectorStateColor(cycle ? cycle.state : 'normal')
+              return (
+                <div key={sector.id} style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  padding: '6px 8px', borderRadius: 8, marginBottom: 2,
+                  background: rowBg || 'transparent',
+                }}>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: '#374151' }}>{sector.emoji} {sector.name}</span>
+                  <span style={{ fontSize: 12, fontWeight: 900, color: sColor }}>{label}</span>
+                </div>
+              )
+            })}
+          </div>
+
+          {/* Company news items */}
+          {companyItems.map((item, i) => {
             const co = item.companyId ? COMPANIES.find(c => c.id === item.companyId) : null
-            const isDownturnDupe = downturnItems.includes(item)
-            if (isDownturnDupe) return null
+            const isPos = item.sentiment === 'positive'
+            const isNeg = item.sentiment === 'negative'
+            const border = isPos ? '#86EFAC' : isNeg ? '#FCA5A5' : '#E2E8F0'
+            const bg = isPos ? '#F0FDF4' : isNeg ? '#FEF2F2' : '#F8FAFC'
+            const tagColor = isPos ? '#16A34A' : isNeg ? '#DC2626' : '#6B7280'
             return (
               <div
-                key={i}
+                key={`cn-${i}`}
                 onClick={() => handleHeadlineClick(item)}
                 style={{
-                  background: cfg.bg,
-                  border: `1.5px solid ${cfg.border}`,
-                  borderRadius: 14,
-                  padding: '12px 14px',
+                  background: bg,
+                  border: `1.5px solid ${border}`,
+                  borderRadius: 14, padding: '12px 14px',
                   marginBottom: 8,
                   cursor: item.companyId ? 'pointer' : 'default',
                 }}
@@ -161,15 +249,15 @@ export default function NewsModal({ turn, currentNews, economy, onClose, onSelec
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
                   <div style={{
                     display: 'inline-block',
-                    fontSize: 10, fontWeight: 900, color: cfg.color,
-                    background: cfg.color + '15', border: `1px solid ${cfg.color}30`,
+                    fontSize: 10, fontWeight: 900, color: tagColor,
+                    background: tagColor + '18', border: `1px solid ${tagColor}30`,
                     borderRadius: 6, padding: '2px 8px',
                     textTransform: 'uppercase', letterSpacing: '0.08em',
                   }}>
-                    {cfg.label}
+                    📣 {isPos ? '+6% next turn' : isNeg ? '−6% next turn' : 'Company News'}
                   </div>
                   {co && (
-                    <span style={{ fontSize: 11, fontWeight: 700, color: cfg.color, opacity: 0.8 }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: tagColor, opacity: 0.8 }}>
                       {co.emoji} tap to view →
                     </span>
                   )}

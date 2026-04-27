@@ -296,6 +296,24 @@ export default function CompanyCard({
           </div>
         </div>
 
+        {/* Guide tip: step 1 "Tap Buy to own it!" */}
+        {chipGuideStep === 1 && !owned && (
+          <div style={{
+            background: 'linear-gradient(135deg, #1D4ED8, #7C3AED)',
+            borderRadius: 14, padding: '12px 14px',
+            marginBottom: 14,
+            display: 'flex', alignItems: 'center', gap: 10,
+          }}>
+            <span style={{ fontSize: 26 }}>🤖</span>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 900, color: '#fff', marginBottom: 2 }}>Chip's Tip</div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.9)', lineHeight: 1.4 }}>
+                Tap <strong>Buy</strong> below to own this company and start collecting profit every turn!
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Flash Sale Banner */}
         {isOnFlashSale && (
           <div style={{
