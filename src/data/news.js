@@ -328,6 +328,100 @@ export const COMPANY_GOSSIP = {
       "🏖️ SunVilla feeling the pinch as consumers cut luxury travel spending",
     ],
   },
+  // Tech
+  cloudcore: {
+    positive: [
+      "☁️ CloudCore wins massive government cloud contract — analysts raise price targets",
+      "☁️ CloudCore enterprise signups hit record — every Fortune 500 company now a customer",
+      "☁️ CloudCore unveils AI-powered cloud services — demand surges overnight",
+    ],
+    neutral: [
+      "☁️ CloudCore breaks ground on three new data centers across the country",
+      "☁️ CloudCore announces upgraded storage tier — existing customers upgrading fast",
+    ],
+    negative: [
+      "☁️ CloudCore outage takes down thousands of websites for 3 hours — PR nightmare",
+      "☁️ New rival launches cloud service at half CloudCore's price — market share at risk",
+    ],
+  },
+  neuralaim: {
+    positive: [
+      "🤖 NeuralAI's new model scores top marks in every benchmark — investors go wild",
+      "🤖 NeuralAI lands $2B enterprise deal — every major bank wants its AI",
+      "🤖 NeuralAI breakthrough: model solves problems in seconds that took humans years",
+    ],
+    neutral: [
+      "🤖 NeuralAI announces research partnership with top university",
+      "🤖 NeuralAI releases developer toolkit — 50,000 companies sign up in a week",
+    ],
+    negative: [
+      "🤖 Competitor launches AI model that outperforms NeuralAI at half the cost",
+      "🤖 AI hype cooling? Analysts warn NeuralAI's sky-high valuation can't last",
+      "🤖 NeuralAI faces regulatory probe into data privacy practices",
+    ],
+  },
+  pixelphone: {
+    positive: [
+      "📱 PixelPhone pre-orders smash records — 10M units reserved before launch day",
+      "📱 PixelPhone named 'Best Smartphone Ever Made' — waiting lists in every country",
+      "📱 PixelPhone's new camera gets perfect scores — upgrade cycle accelerating",
+    ],
+    neutral: [
+      "📱 PixelPhone announces annual event — new model details leak fuel excitement",
+      "📱 PixelPhone expanding repair network — customer satisfaction scores climb",
+    ],
+    negative: [
+      "📱 PixelPhone faces chip shortage — holiday shipments may fall short of demand",
+      "📱 Rival launches premium phone at lower price — analysts cut PixelPhone estimates",
+    ],
+  },
+  appnation: {
+    positive: [
+      "📲 AppNation's top game earns $100M in one week — platform cut is enormous",
+      "📲 AppNation reports record downloads — new markets driving explosive growth",
+      "📲 AppNation raises developer fees — more revenue per transaction than ever",
+    ],
+    neutral: [
+      "📲 AppNation developer conference draws biggest crowd in company history",
+      "📲 AppNation launches subscription bundle — early sign-up numbers strong",
+    ],
+    negative: [
+      "📲 Antitrust regulators investigating AppNation's 30% app fee — legal costs mounting",
+      "📲 Major developer pulls flagship app from AppNation — users furious",
+      "📲 AppNation faces developer backlash over new policy changes",
+    ],
+  },
+  cybershield: {
+    positive: [
+      "🔒 Massive data breach hits rivals — panicked companies flood CyberShield with orders",
+      "🔒 CyberShield wins 5-year government contract to protect critical infrastructure",
+      "🔒 CyberShield's new AI threat detector stops largest cyberattack in history",
+    ],
+    neutral: [
+      "🔒 CyberShield achieves highest security certification — opens new government market",
+      "🔒 CyberShield releases annual threat report — downloads driving brand credibility",
+    ],
+    negative: [
+      "🔒 High-profile client suffers breach despite CyberShield protection — PR damage",
+      "🔒 Competitor wins marquee contract CyberShield had been counting on",
+    ],
+  },
+  chipforge: {
+    positive: [
+      "⚡ AI server boom sends ChipForge orders soaring — factories running 24/7",
+      "⚡ ChipForge's next-gen chip outperforms all rivals — tech giants in bidding war",
+      "⚡ ChipForge wins exclusive 3-year supply deal with world's largest smartphone maker",
+    ],
+    neutral: [
+      "⚡ ChipForge breaks ground on $8B advanced chip factory — capacity doubling",
+      "⚡ ChipForge announces new chip architecture — developers excited about performance leap",
+    ],
+    negative: [
+      "⚡ Tech slowdown triggers wave of ChipForge order cancellations — outlook slashed",
+      "⚡ Rival launches chip at same speed for 30% less — ChipForge market share at risk",
+      "⚡ ChipForge warns of oversupply — prices falling faster than expected",
+    ],
+  },
   // Entertainment
   streamflix: {
     positive: [
@@ -487,23 +581,21 @@ export function generateNews(economy, sectorCycles, ownedCompanies, turn, flashS
     }
   }
 
-  // 4. Company gossip (1–2 items, prefer owned companies)
+  // 4. Company news — owned companies always included, fill with 1-2 random unowned
+  //    Total: 2-3 items per turn. Positive/negative sentiments carry a ±6% multiplier effect.
   const allIds = COMPANIES.map(c => c.id)
-  const gossipPool = ownedCompanies.length > 0
-    ? [...ownedCompanies, ...allIds.filter(id => !ownedCompanies.includes(id))].slice(0, 5)
-    : allIds.slice(0, 4)
+  const unownedIds = allIds.filter(id => !ownedCompanies.includes(id))
 
-  const gossipCount = Math.random() < 0.4 ? 1 : 2
-  const usedIds = new Set()
-  for (let i = 0; i < gossipCount; i++) {
-    let id = null
-    for (const candidate of gossipPool) {
-      if (!usedIds.has(candidate)) { id = candidate; break }
-    }
-    if (!id) break
-    usedIds.add(id)
-    const companyGossip = COMPANY_GOSSIP[id]
-    if (!companyGossip) continue
+  // Build ordered pick list: owned first, then shuffled unowned
+  const shuffledUnowned = [...unownedIds].sort(() => Math.random() - 0.5)
+  const ownedToShow = ownedCompanies.slice(0, 2)
+  const targetTotal = ownedToShow.length === 0 ? 2 : ownedToShow.length < 2 ? 2 : 3
+  const extraUnowned = shuffledUnowned.slice(0, Math.max(1, targetTotal - ownedToShow.length))
+  const newsPool = [...ownedToShow, ...extraUnowned].slice(0, targetTotal)
+
+  for (const id of newsPool) {
+    const companyData = COMPANY_GOSSIP[id]
+    if (!companyData) continue
     // Sentiment weighted toward neutral/positive in boom, negative in slowdown
     let sentimentRoll = Math.random()
     let sentiment
@@ -514,9 +606,9 @@ export function generateNews(economy, sectorCycles, ownedCompanies, turn, flashS
     } else {
       sentiment = sentimentRoll < 0.35 ? 'positive' : sentimentRoll < 0.65 ? 'neutral' : 'negative'
     }
-    const pool = companyGossip[sentiment] || companyGossip.neutral || companyGossip.positive
+    const pool = companyData[sentiment] || companyData.neutral || companyData.positive
     if (pool && pool.length > 0) {
-      headlines.push({ tier: 'gossip', companyId: id, text: pickRandom(pool) })
+      headlines.push({ tier: 'companyNews', companyId: id, sentiment, text: pickRandom(pool) })
     }
   }
 

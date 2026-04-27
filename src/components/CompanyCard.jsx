@@ -3,22 +3,14 @@ import { BADGES, COMPANIES, SECTORS } from '../data/companies.js'
 import { formatMoney, calcLocationsMultiplier } from '../game/engine.js'
 import Sparkline from './Sparkline.jsx'
 
-// Danger badge IDs — get distinct visual treatment
-const DANGER_BADGES = new Set(['inDecline', 'wildRisk', 'highRisk'])
-const BADGE_COLORS = {
-  lowRisk:         '#22C55E',
-  modRisk:         '#EAB308',
-  highRisk:        '#EF4444',
-  wildRisk:        '#EF4444',
-  slowGrowth:      '#94A3B8',
-  steadyGrowth:    '#3B82F6',
-  fastGrowth:      '#22C55E',
-  inDecline:       '#EF4444',
-  cashCow:         '#EAB308',
-  counterCyclical: '#10B981',
-  fadAlert:        '#F97316',
-  ecommBoom:       '#3B82F6',
-  stickyRevenue:   '#8B5CF6',
+// Badge visual config for the single-badge system
+const BADGE_STYLE = {
+  safeBet:      { color: '#16A34A', bg: '#F0FDF4', border: '#86EFAC', danger: false },
+  steadyGrower: { color: '#1D4ED8', bg: '#EFF6FF', border: '#93C5FD', danger: false },
+  balanced:     { color: '#D97706', bg: '#FFFBEB', border: '#FCD34D', danger: false },
+  highRisk:     { color: '#DC2626', bg: '#FEF2F2', border: '#FCA5A5', danger: true  },
+  wildCard:     { color: '#DC2626', bg: '#FEF2F2', border: '#FCA5A5', danger: true  },
+  fadingOut:    { color: '#9CA3AF', bg: '#F8FAFC', border: '#E2E8F0', danger: false },
 }
 
 function ROIHint({ cost, profitPerTurn }) {
@@ -53,6 +45,7 @@ export default function CompanyCard({
   onBack,
   onViewDetails,
   sectorName,
+  companyNewsEffects,
 }) {
   const co = COMPANIES.find(c => c.id === companyId)
   if (!co) return null
@@ -87,7 +80,7 @@ export default function CompanyCard({
     contextBanner = { text: '📉 Economy slowdown is pushing this value down', color: '#EF4444', bg: '#FEF2F2', border: '#FCA5A5' }
   } else if (econState === 'booming' && co.profSens > 0.3) {
     contextBanner = { text: '🌟 Economic boom is lifting this company!', color: '#16A34A', bg: '#F0FDF4', border: '#86EFAC' }
-  } else if (co.badges.includes('inDecline')) {
+  } else if (co.badge === 'fadingOut') {
     contextBanner = { text: '📉 This company fades every turn — even in good times', color: '#9CA3AF', bg: '#F8FAFC', border: '#E2E8F0' }
   }
 
@@ -257,39 +250,49 @@ export default function CompanyCard({
       {/* Card Body */}
       <div style={{ flex: 1, padding: '16px 16px 130px' }}>
 
-        {/* Badges */}
+        {/* Badge + News Effect */}
         <div style={{ marginBottom: 16 }}>
           <div style={{ fontSize: 11, fontWeight: 800, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
             Company Profile
           </div>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            {co.badges.map(badgeId => {
-              const badge = BADGES[badgeId]
-              const isDanger = DANGER_BADGES.has(badgeId)
-              const color = BADGE_COLORS[badgeId] || '#6B7280'
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+            {(() => {
+              const badge = BADGES[co.badge]
+              const style = BADGE_STYLE[co.badge] || { color: '#6B7280', bg: '#F8FAFC', border: '#E2E8F0', danger: false }
               return (
                 <button
-                  key={badgeId}
-                  onClick={() => onBadgeTap && onBadgeTap(badgeId)}
+                  onClick={() => onBadgeTap && onBadgeTap(co.badge)}
                   style={{
                     padding: '7px 13px',
-                    background: isDanger ? '#FEF2F2' : '#F8FAFC',
-                    border: `1.5px solid ${isDanger ? '#FCA5A5' : '#E2E8F0'}`,
+                    background: style.bg,
+                    border: `1.5px solid ${style.border}`,
                     borderRadius: 20,
                     fontSize: 13, fontWeight: 800,
-                    color: isDanger ? '#DC2626' : '#374151',
+                    color: style.color,
                     cursor: 'pointer', fontFamily: 'inherit',
                     display: 'flex', alignItems: 'center', gap: 4,
                   }}
                 >
-                  {badge ? badge.label : badgeId}
-                  {isDanger && <span style={{ fontSize: 10, fontWeight: 900, color: '#EF4444' }}>!</span>}
+                  {badge ? badge.label : co.badge}
+                  {style.danger && <span style={{ fontSize: 10, fontWeight: 900, color: '#EF4444' }}>!</span>}
                 </button>
               )
-            })}
+            })()}
+            {/* News effect badge */}
+            {companyNewsEffects && companyNewsEffects[companyId] !== undefined && (
+              <div style={{
+                padding: '5px 11px', borderRadius: 20,
+                fontSize: 13, fontWeight: 800,
+                color: companyNewsEffects[companyId] > 0 ? '#16A34A' : '#DC2626',
+                background: companyNewsEffects[companyId] > 0 ? '#F0FDF4' : '#FEF2F2',
+                border: `1.5px solid ${companyNewsEffects[companyId] > 0 ? '#86EFAC' : '#FCA5A5'}`,
+              }}>
+                {companyNewsEffects[companyId] > 0 ? '📰 +6% next turn' : '📰 −6% next turn'}
+              </div>
+            )}
           </div>
           <div style={{ fontSize: 11, color: '#9CA3AF', fontWeight: 600, marginTop: 6 }}>
-            Tap any badge to learn what it means
+            Tap badge to learn what it means
           </div>
         </div>
 

@@ -1,8 +1,36 @@
 import React from 'react'
-import { COMPANIES, SECTORS } from '../data/companies.js'
-import { formatMoney, getSectorStateLabel, getSectorStateColor } from '../game/engine.js'
+import { BADGES, COMPANIES, SECTORS } from '../data/companies.js'
+import { formatMoney, getSectorStateColor } from '../game/engine.js'
 
-export default function SectorView({ sectorId, companyStates, portfolio, turnActions, sectorCycles, flashSale, onSelectCompany, onBack }) {
+// Returns the full cycle badge label including preSignal suffix
+function getCycleBadgeLabel(cycle) {
+  if (!cycle) return '🟡 Normal'
+  if (cycle.state === 'boom') {
+    return cycle.preSignal === 'preBoom' ? '🟢 Boom · 🌱 Easing' : '🟢 Boom'
+  }
+  if (cycle.state === 'downturn') {
+    return cycle.preSignal === 'preBoom' ? '🔴 Downturn · 🌱 Recovering' : '🔴 Downturn'
+  }
+  // Normal
+  if (cycle.preSignal === 'preSlowdown') return '🟡 Normal · ⚠️ Slowing'
+  if (cycle.preSignal === 'preBoom') return '🟡 Normal · 🌱 Recovering'
+  return '🟡 Normal'
+}
+
+const BADGE_PILL_COLORS = {
+  safeBet:      { color: '#16A34A', bg: '#F0FDF4', border: '#86EFAC' },
+  steadyGrower: { color: '#1D4ED8', bg: '#EFF6FF', border: '#93C5FD' },
+  balanced:     { color: '#D97706', bg: '#FFFBEB', border: '#FCD34D' },
+  highRisk:     { color: '#DC2626', bg: '#FEF2F2', border: '#FCA5A5' },
+  wildCard:     { color: '#DC2626', bg: '#FEF2F2', border: '#FCA5A5' },
+  fadingOut:    { color: '#9CA3AF', bg: '#F8FAFC', border: '#E2E8F0' },
+}
+
+export default function SectorView({
+  sectorId, companyStates, portfolio, turnActions, sectorCycles,
+  flashSale, onSelectCompany, onBack,
+  cash, netWorth, companyNewsEffects,
+}) {
   const sector = SECTORS[sectorId]
   if (!sector) return null
 
@@ -10,6 +38,7 @@ export default function SectorView({ sectorId, companyStates, portfolio, turnAct
   const sectorCycle = sectorCycles[sectorId]
   const sectorState = sectorCycle ? sectorCycle.state : 'normal'
   const stateColor = getSectorStateColor(sectorState)
+  const cycleBadgeLabel = getCycleBadgeLabel(sectorCycle)
 
   return (
     <div style={{
@@ -51,7 +80,7 @@ export default function SectorView({ sectorId, companyStates, portfolio, turnAct
           </button>
         </div>
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 12 }}>
           <div>
             <div style={{ fontSize: 26, fontWeight: 900, color: '#fff', textShadow: '0 2px 8px rgba(0,0,0,0.2)' }}>
               {sector.emoji} {sector.name}
@@ -68,10 +97,36 @@ export default function SectorView({ sectorId, companyStates, portfolio, turnAct
             fontSize: 12, fontWeight: 900,
             color: '#fff',
             backdropFilter: 'blur(8px)',
+            flexShrink: 0,
+            marginLeft: 8,
           }}>
-            {getSectorStateLabel(sectorState)}
+            {cycleBadgeLabel}
           </div>
         </div>
+
+        {/* Cash + Net Worth pills */}
+        {(cash !== undefined || netWorth !== undefined) && (
+          <div style={{ display: 'flex', gap: 8 }}>
+            {cash !== undefined && (
+              <div style={{
+                background: 'rgba(255,255,255,0.18)', borderRadius: 20,
+                padding: '4px 12px', fontSize: 12, fontWeight: 800, color: '#fff',
+                border: '1px solid rgba(255,255,255,0.25)',
+              }}>
+                💵 {formatMoney(cash)}
+              </div>
+            )}
+            {netWorth !== undefined && (
+              <div style={{
+                background: 'rgba(255,255,255,0.18)', borderRadius: 20,
+                padding: '4px 12px', fontSize: 12, fontWeight: 800, color: '#fff',
+                border: '1px solid rgba(255,255,255,0.25)',
+              }}>
+                📈 {formatMoney(netWorth)}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Company List */}
@@ -80,11 +135,16 @@ export default function SectorView({ sectorId, companyStates, portfolio, turnAct
           const cs = companyStates[co.id] || { profit: co.baseProfit, multiplier: co.baseMultiplier }
           const baseValue = Math.round(cs.profit * cs.multiplier)
           const owned = portfolio[co.id]
-          const actionTaken = turnActions && turnActions[co.id]
-          const isDecline = co.badges.includes('inDecline')
           const isOnFlashSale = !owned && flashSale && flashSale.companyId === co.id
           const flashDiscount = isOnFlashSale ? flashSale.discount : 0
           const value = isOnFlashSale ? Math.round(baseValue * (1 - flashDiscount)) : baseValue
+
+          const badge = BADGES[co.badge]
+          const pillStyle = BADGE_PILL_COLORS[co.badge] || { color: '#6B7280', bg: '#F1F5F9', border: '#E2E8F0' }
+
+          // Company news effect badge
+          const newsEffect = companyNewsEffects && companyNewsEffects[co.id]
+          const newsLabel = newsEffect > 0 ? '📰 +6%' : newsEffect < 0 ? '📰 −6%' : null
 
           return (
             <button
@@ -121,7 +181,7 @@ export default function SectorView({ sectorId, companyStates, portfolio, turnAct
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
                   <div style={{ fontSize: 16, fontWeight: 900, color: '#1E293B' }}>{co.name}</div>
-                  <div style={{ display: 'flex', gap: 5, alignItems: 'center' }}>
+                  <div style={{ display: 'flex', gap: 5, alignItems: 'center', flexShrink: 0, marginLeft: 6 }}>
                     {owned && (
                       <span style={{
                         fontSize: 10, fontWeight: 900, color: '#1D4ED8',
@@ -140,9 +200,9 @@ export default function SectorView({ sectorId, companyStates, portfolio, turnAct
                         ⚡ {Math.round(flashDiscount * 100)}% OFF
                       </span>
                     )}
-                    {/* Declining tag removed — badge on company card is sufficient */}
                   </div>
                 </div>
+
                 <div style={{ display: 'flex', gap: 8, marginBottom: 6, alignItems: 'center', flexWrap: 'wrap' }}>
                   <span style={{ fontSize: 13, fontWeight: 800, color: '#16A34A' }}>
                     {formatMoney(cs.profit)}/turn
@@ -156,24 +216,31 @@ export default function SectorView({ sectorId, companyStates, portfolio, turnAct
                     </span>
                   )}
                 </div>
-                <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
-                  {co.badges.slice(0, 2).map(b => {
-                    const isDanger = b === 'inDecline' || b === 'wildRisk' || b === 'highRisk'
-                    return (
-                      <span key={b} style={{
-                        fontSize: 10, fontWeight: 800,
-                        color: isDanger ? '#DC2626' : '#6B7280',
-                        background: isDanger ? '#FEF2F2' : '#F1F5F9',
-                        padding: '2px 7px', borderRadius: 6,
-                        border: isDanger ? '1px solid #FCA5A5' : 'none',
-                      }}>
-                        {b === 'lowRisk' ? '🛡️ Low Risk' : b === 'wildRisk' ? '🌪️ Wild Risk' :
-                         b === 'modRisk' ? '⚡ Mod. Risk' : b === 'highRisk' ? '🔥 High Risk' :
-                         b === 'fastGrowth' ? '🚀 Fast Growth' : b === 'slowGrowth' ? '🐢 Slow Growth' :
-                         b === 'steadyGrowth' ? '📈 Steady' : b === 'inDecline' ? '📉 In Decline' : b}
-                      </span>
-                    )
-                  })}
+
+                {/* Single profile badge + news effect */}
+                <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', alignItems: 'center' }}>
+                  {badge && (
+                    <span style={{
+                      fontSize: 11, fontWeight: 800,
+                      color: pillStyle.color,
+                      background: pillStyle.bg,
+                      padding: '2px 8px', borderRadius: 6,
+                      border: `1px solid ${pillStyle.border}`,
+                    }}>
+                      {badge.label}
+                    </span>
+                  )}
+                  {newsLabel && (
+                    <span style={{
+                      fontSize: 11, fontWeight: 800,
+                      color: newsEffect > 0 ? '#16A34A' : '#DC2626',
+                      background: newsEffect > 0 ? '#F0FDF4' : '#FEF2F2',
+                      padding: '2px 7px', borderRadius: 6,
+                      border: `1px solid ${newsEffect > 0 ? '#86EFAC' : '#FCA5A5'}`,
+                    }}>
+                      {newsLabel}
+                    </span>
+                  )}
                 </div>
               </div>
 

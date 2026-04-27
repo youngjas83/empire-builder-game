@@ -97,6 +97,8 @@ export function createInitialGameState(empireName, difficulty) {
     showBillionScreen: false,
     billionTurn: null,
     onboardingDismissed: false,
+    chipGuideStep: 0,       // 0-3 = active guide, 4 = done
+    companyNewsEffects: {}, // { [companyId]: ±0.06 } — applied next resolveEndTurn
   }
 }
 
@@ -158,6 +160,14 @@ export function resolveEndTurn(state) {
 
   // Deep copy mutable state
   companyStates = JSON.parse(JSON.stringify(companyStates))
+
+  // 0. Apply companyNews effects from previous turn's news (±6% multiplier)
+  const prevEffects = state.companyNewsEffects || {}
+  Object.entries(prevEffects).forEach(([id, effect]) => {
+    if (companyStates[id]) {
+      companyStates[id].multiplier = companyStates[id].multiplier * (1 + effect)
+    }
+  })
 
   // 1. Apply valuation layers to each company
   COMPANIES.forEach(co => {
@@ -295,7 +305,7 @@ export function resolveEndTurn(state) {
   // 8% chance to start a new flash sale when none is active
   if (!newFlashSale && Math.random() < 0.08) {
     const eligible = COMPANIES.filter(co =>
-      !updatedPortfolio[co.id] && !co.badges.includes('inDecline')
+      !updatedPortfolio[co.id] && co.badge !== 'fadingOut'
     )
     if (eligible.length > 0) {
       const target = eligible[Math.floor(Math.random() * eligible.length)]
@@ -303,7 +313,7 @@ export function resolveEndTurn(state) {
     }
   }
 
-  // 8. Next turn's news
+  // 8. Next turn's news + extract ±6% companyNews effects
   const nextTurn = turn + 1
   const newNews = generateNews(
     newEconomy,
@@ -312,6 +322,13 @@ export function resolveEndTurn(state) {
     nextTurn,
     newFlashSale
   )
+  const newCompanyNewsEffects = {}
+  newNews.headlines.forEach(h => {
+    if (h.tier === 'companyNews' && h.companyId && h.sentiment) {
+      if (h.sentiment === 'positive') newCompanyNewsEffects[h.companyId] = 0.06
+      else if (h.sentiment === 'negative') newCompanyNewsEffects[h.companyId] = -0.06
+    }
+  })
 
   // 9. Net worth + level
   const newNetWorth = calcNetWorth(cash, updatedPortfolio, companyStates)
@@ -374,6 +391,7 @@ export function resolveEndTurn(state) {
     billionHit: state.billionHit || newNetWorth >= 1000000000,
     showBillionScreen: newNetWorth >= 1000000000 && !state.billionHit,
     billionTurn: (!state.billionHit && newNetWorth >= 1000000000) ? turn : state.billionTurn,
+    companyNewsEffects: newCompanyNewsEffects,
   }
 }
 
