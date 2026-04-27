@@ -46,6 +46,7 @@ export default function CompanyCard({
   onViewDetails,
   sectorName,
   companyNewsEffects,
+  chipGuideStep,
 }) {
   const co = COMPANIES.find(c => c.id === companyId)
   if (!co) return null

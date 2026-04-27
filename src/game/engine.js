@@ -55,7 +55,7 @@ export function createInitialGameState(empireName, difficulty) {
     tech:          { state: 'normal', turnsLeft: 4 },
     industrials:   { state: 'normal', turnsLeft: 4 },
   }
-  const firstNews = generateNews(economy, sectorCycles, [], 1)
+  const firstNews = generateNews(economy, sectorCycles, [], 1, null, 1)
 
   return {
     phase: 'game',
@@ -320,7 +320,8 @@ export function resolveEndTurn(state) {
     newSectorCycles,
     Object.keys(updatedPortfolio),
     nextTurn,
-    newFlashSale
+    newFlashSale,
+    newLevel
   )
   const newCompanyNewsEffects = {}
   newNews.headlines.forEach(h => {

@@ -1,5 +1,5 @@
 // News template bank for the Empire Gazette
-import { COMPANIES } from './companies.js'
+import { COMPANIES, SECTORS } from './companies.js'
 
 // ─── Economy Headlines ────────────────────────────────────────────────────────
 
@@ -531,7 +531,7 @@ export function pickRandom(arr) {
 
 // ─── Generate News ────────────────────────────────────────────────────────────
 
-export function generateNews(economy, sectorCycles, ownedCompanies, turn, flashSale) {
+export function generateNews(economy, sectorCycles, ownedCompanies, turn, flashSale, level = 1) {
   const headlines = []
 
   // 1. Economy headline
@@ -583,7 +583,13 @@ export function generateNews(economy, sectorCycles, ownedCompanies, turn, flashS
 
   // 4. Company news — owned companies always included, fill with 1-2 random unowned
   //    Total: 2-3 items per turn. Positive/negative sentiments carry a ±6% multiplier effect.
-  const allIds = COMPANIES.map(c => c.id)
+  //    Only include companies from sectors the player has unlocked.
+  const unlockedSectorIds = new Set(
+    Object.values(SECTORS)
+      .filter(s => level >= s.unlockLevel)
+      .map(s => s.id)
+  )
+  const allIds = COMPANIES.filter(c => unlockedSectorIds.has(c.sector)).map(c => c.id)
   const unownedIds = allIds.filter(id => !ownedCompanies.includes(id))
 
   // Build ordered pick list: owned first, then shuffled unowned
