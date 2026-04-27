@@ -93,7 +93,7 @@ export default function SectorView({ sectorId, companyStates, portfolio, turnAct
               style={{
                 width: '100%',
                 background: '#fff',
-                border: `2px solid ${owned ? sector.color : isDecline ? '#FCA5A5' : '#E2E8F0'}`,
+                border: `2px solid ${owned ? sector.color : '#E2E8F0'}`,
                 borderRadius: 16,
                 padding: '14px 14px',
                 marginBottom: 10,
@@ -102,8 +102,6 @@ export default function SectorView({ sectorId, companyStates, portfolio, turnAct
                 textAlign: 'left',
                 boxShadow: owned
                   ? `0 4px 16px ${sector.color}25`
-                  : isDecline
-                  ? '0 2px 8px rgba(239,68,68,0.08)'
                   : '0 1px 4px rgba(0,0,0,0.05)',
                 transition: 'all 0.15s',
               }}
@@ -142,15 +140,7 @@ export default function SectorView({ sectorId, companyStates, portfolio, turnAct
                         ⚡ {Math.round(flashDiscount * 100)}% OFF
                       </span>
                     )}
-                    {isDecline && !owned && (
-                      <span style={{
-                        fontSize: 10, fontWeight: 900, color: '#DC2626',
-                        background: '#FEF2F2', padding: '2px 7px', borderRadius: 6,
-                        border: '1px solid #FCA5A5',
-                      }}>
-                        ⚠️ DECLINING
-                      </span>
-                    )}
+                    {/* Declining tag removed — badge on company card is sufficient */}
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: 8, marginBottom: 6, alignItems: 'center', flexWrap: 'wrap' }}>

@@ -3,7 +3,7 @@ import React from 'react'
 const TABS = [
   { id: 'empire',  emoji: '🏙️', label: 'Empire'  },
   { id: 'news',    emoji: '📰', label: 'News'    },
-  { id: 'market',  emoji: '📊', label: 'Market'  },
+  { id: 'market',  emoji: '📊', label: 'Stats'   },
   { id: 'chip',    emoji: '🤖', label: 'Help'    },
 ]
 

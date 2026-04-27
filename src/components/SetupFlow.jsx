@@ -1,5 +1,13 @@
 import React from 'react'
 import Chip from './Chip.jsx'
+import { formatMoney } from '../game/engine.js'
+
+function getSavedGame() {
+  try { return JSON.parse(localStorage.getItem('empireBuilderSave')) || null } catch (e) { return null }
+}
+function getLeaderboard() {
+  try { return JSON.parse(localStorage.getItem('empireBuilderLeaderboard')) || { billion: [], netWorth: [] } } catch (e) { return { billion: [], netWorth: [] } }
+}
 
 const DIFFICULTY_OPTIONS = [
   {
@@ -65,7 +73,140 @@ const CHIP_INTRO_STEPS = [
   },
 ]
 
-export default function SetupFlow({ setupStep, empireName, chipIntroStep, selectedDifficulty, onSetName, onSelectDifficulty, onAdvance }) {
+export default function SetupFlow({ setupStep, empireName, chipIntroStep, selectedDifficulty, onSetName, onSelectDifficulty, onAdvance, onContinue, onNewGame }) {
+
+  // ── Step -1: Landing / Continue screen ───────────────────────────────────────
+  if (setupStep === -1) {
+    const saved = getSavedGame()
+    const lb = getLeaderboard()
+    const hasLeaderboard = lb.billion.length > 0 || lb.netWorth.length > 0
+
+    return (
+      <div style={{
+        minHeight: '100vh',
+        background: 'linear-gradient(160deg, #1D4ED8 0%, #7C3AED 100%)',
+        display: 'flex', flexDirection: 'column', alignItems: 'center',
+        overflowY: 'auto',
+        padding: 'calc(env(safe-area-inset-top, 0px) + 48px) 24px calc(env(safe-area-inset-bottom, 0px) + 40px)',
+        position: 'relative', overflow: 'hidden',
+      }}>
+        {/* Background glows */}
+        <div style={{ position: 'absolute', top: -80, right: -80, width: 300, height: 300, borderRadius: '50%', background: 'rgba(255,255,255,0.07)', filter: 'blur(60px)', pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', bottom: -60, left: -60, width: 250, height: 250, borderRadius: '50%', background: 'rgba(252,211,77,0.12)', filter: 'blur(50px)', pointerEvents: 'none' }} />
+
+        {/* Logo */}
+        <div style={{ fontSize: 64, marginBottom: 6, filter: 'drop-shadow(0 4px 24px rgba(0,0,0,0.3))', position: 'relative', zIndex: 1 }}>🏙️</div>
+        <div style={{ fontSize: 36, fontWeight: 900, color: '#FCD34D', marginBottom: 4, letterSpacing: '-1px', textShadow: '0 2px 20px rgba(252,211,77,0.4)', position: 'relative', zIndex: 1 }}>
+          EMPIRE BUILDER
+        </div>
+        <div style={{ fontSize: 14, fontWeight: 700, color: 'rgba(255,255,255,0.6)', marginBottom: 32, position: 'relative', zIndex: 1 }}>
+          Grow $10M into $1 Billion 🚀
+        </div>
+
+        {/* Continue card */}
+        {saved && (
+          <button
+            onClick={onContinue}
+            style={{
+              width: '100%', maxWidth: 340,
+              background: 'linear-gradient(135deg, rgba(255,255,255,0.18), rgba(255,255,255,0.10))',
+              border: '2px solid rgba(255,255,255,0.35)',
+              borderRadius: 20, padding: '18px 20px',
+              marginBottom: 12, cursor: 'pointer',
+              fontFamily: 'inherit', textAlign: 'left',
+              position: 'relative', zIndex: 1,
+              backdropFilter: 'blur(12px)',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
+            }}
+          >
+            <div style={{ fontSize: 11, fontWeight: 900, color: 'rgba(255,255,255,0.55)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 6 }}>
+              Continue Playing
+            </div>
+            <div style={{ fontSize: 18, fontWeight: 900, color: '#fff', marginBottom: 4 }}>
+              🏙️ {saved.empireName}
+            </div>
+            <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+              <span style={{ fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.75)' }}>
+                Turn {saved.turn}
+              </span>
+              <span style={{ width: 4, height: 4, borderRadius: '50%', background: 'rgba(255,255,255,0.4)' }} />
+              <span style={{ fontSize: 13, fontWeight: 700, color: '#86EFAC' }}>
+                {formatMoney(saved.netWorthHistory ? saved.netWorthHistory[saved.netWorthHistory.length - 1] : 0)} net worth
+              </span>
+            </div>
+            <div style={{ position: 'absolute', right: 20, top: '50%', transform: 'translateY(-50%)', fontSize: 22, color: 'rgba(255,255,255,0.5)' }}>›</div>
+          </button>
+        )}
+
+        {/* New Game button */}
+        <button
+          onClick={onNewGame}
+          style={{
+            width: '100%', maxWidth: 340,
+            padding: '15px',
+            background: saved ? 'rgba(255,255,255,0.12)' : 'linear-gradient(135deg, #FCD34D, #FBBF24)',
+            color: saved ? '#fff' : '#1E293B',
+            border: saved ? '2px solid rgba(255,255,255,0.25)' : 'none',
+            borderRadius: 16, fontSize: 17, fontWeight: 900,
+            fontFamily: 'inherit', cursor: 'pointer',
+            marginBottom: 32, position: 'relative', zIndex: 1,
+            boxShadow: saved ? 'none' : '0 6px 24px rgba(252,211,77,0.45)',
+          }}
+        >
+          {saved ? 'New Game' : 'Start Game →'}
+        </button>
+
+        {/* Leaderboard */}
+        {hasLeaderboard && (
+          <div style={{ width: '100%', maxWidth: 340, position: 'relative', zIndex: 1 }}>
+            {lb.billion.length > 0 && (
+              <div style={{ marginBottom: 20 }}>
+                <div style={{ fontSize: 12, fontWeight: 900, color: 'rgba(255,255,255,0.55)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10, textAlign: 'center' }}>
+                  🏆 Fastest to $1 Billion
+                </div>
+                {lb.billion.slice(0, 5).map((entry, i) => (
+                  <div key={i} style={{
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    background: 'rgba(255,255,255,0.1)', borderRadius: 10,
+                    padding: '9px 14px', marginBottom: 5,
+                  }}>
+                    <span style={{ fontSize: 13, fontWeight: 800, color: i === 0 ? '#FCD34D' : '#fff' }}>
+                      {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`} {entry.name}
+                    </span>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.65)' }}>
+                      {entry.turns} turns
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {lb.netWorth.length > 0 && (
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 900, color: 'rgba(255,255,255,0.55)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10, textAlign: 'center' }}>
+                  💎 Hall of Fame — Best Net Worth
+                </div>
+                {lb.netWorth.slice(0, 5).map((entry, i) => (
+                  <div key={i} style={{
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    background: 'rgba(255,255,255,0.1)', borderRadius: 10,
+                    padding: '9px 14px', marginBottom: 5,
+                  }}>
+                    <span style={{ fontSize: 13, fontWeight: 800, color: i === 0 ? '#FCD34D' : '#fff' }}>
+                      {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`} {entry.name}
+                    </span>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: '#86EFAC' }}>
+                      {formatMoney(entry.value)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    )
+  }
 
   // ── Step 0: Name Your Empire ──────────────────────────────────────────────────
   if (setupStep === 0) {

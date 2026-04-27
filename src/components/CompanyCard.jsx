@@ -42,6 +42,10 @@ export default function CompanyCard({
   turnActions,
   cash,
   flashSale,
+  sectorCycles,
+  economy,
+  turn,
+  isChipPick,
   onBuy,
   onSell,
   onOpenLocation,
@@ -70,6 +74,22 @@ export default function CompanyCard({
   const sectorLabel = sectorData ? `${sectorData.emoji} ${sectorData.name}` : co.sector
 
   const hasHistory = cs.profitHistory && cs.profitHistory.length >= 2
+
+  // Value context banner — explain why value moved
+  const sectorCycle = sectorCycles && sectorCycles[co.sector]
+  const econState = economy && economy.state
+  let contextBanner = null
+  if (sectorCycle && sectorCycle.state === 'downturn') {
+    contextBanner = { text: `⚠️ ${sectorData ? sectorData.name : 'Sector'} slump is draining value each turn`, color: '#DC2626', bg: '#FEF2F2', border: '#FCA5A5' }
+  } else if (sectorCycle && sectorCycle.state === 'boom') {
+    contextBanner = { text: `🚀 ${sectorData ? sectorData.name : 'Sector'} boom is boosting this company!`, color: '#16A34A', bg: '#F0FDF4', border: '#86EFAC' }
+  } else if (econState === 'slowdown' && co.profSens > 0.5) {
+    contextBanner = { text: '📉 Economy slowdown is pushing this value down', color: '#EF4444', bg: '#FEF2F2', border: '#FCA5A5' }
+  } else if (econState === 'booming' && co.profSens > 0.3) {
+    contextBanner = { text: '🌟 Economic boom is lifting this company!', color: '#16A34A', bg: '#F0FDF4', border: '#86EFAC' }
+  } else if (co.badges.includes('inDecline')) {
+    contextBanner = { text: '📉 This company fades every turn — even in good times', color: '#9CA3AF', bg: '#F8FAFC', border: '#E2E8F0' }
+  }
 
   return (
     <div style={{
@@ -134,6 +154,21 @@ export default function CompanyCard({
           </div>
         )}
 
+        {/* Cash pill — bottom left */}
+        {cash !== undefined && (
+          <div style={{
+            position: 'absolute',
+            bottom: 10, left: 12,
+            background: 'rgba(0,0,0,0.30)',
+            color: '#fff',
+            fontSize: 11, fontWeight: 800,
+            padding: '3px 10px', borderRadius: 20,
+            backdropFilter: 'blur(8px)',
+          }}>
+            💰 {formatMoney(cash)}
+          </div>
+        )}
+
         {/* Owned badge */}
         {owned && (
           <div style={{
@@ -145,6 +180,22 @@ export default function CompanyCard({
             fontSize: 11, fontWeight: 900, letterSpacing: '0.05em',
           }}>
             ✓ OWNED
+          </div>
+        )}
+
+        {/* Chip's Pick badge (turn 1, unowned) */}
+        {isChipPick && !owned && (
+          <div style={{
+            position: 'absolute',
+            bottom: 10, left: '50%', transform: 'translateX(-50%)',
+            background: 'linear-gradient(135deg, #1D4ED8, #7C3AED)',
+            color: '#fff',
+            padding: '5px 14px', borderRadius: 20,
+            fontSize: 12, fontWeight: 900, letterSpacing: '0.04em',
+            boxShadow: '0 3px 10px rgba(29,78,216,0.5)',
+            whiteSpace: 'nowrap',
+          }}>
+            🤖 Chip's Pick for Beginners
           </div>
         )}
 
@@ -267,6 +318,20 @@ export default function CompanyCard({
             <div style={{ fontSize: 12, fontWeight: 600, color: '#92400E', marginTop: 6 }}>
               You save {formatMoney(baseValue - value)} — don't miss this deal!
             </div>
+          </div>
+        )}
+
+        {/* Value context banner */}
+        {contextBanner && (
+          <div style={{
+            background: contextBanner.bg,
+            border: `1.5px solid ${contextBanner.border}`,
+            borderRadius: 12, padding: '10px 14px',
+            marginBottom: 14,
+            fontSize: 13, fontWeight: 700, color: contextBanner.color,
+            lineHeight: 1.4,
+          }}>
+            {contextBanner.text}
           </div>
         )}
 
@@ -452,23 +517,32 @@ export default function CompanyCard({
               >
                 {actionTaken ? '✓ Done' : 'Sell'}
               </button>
-              {owned.locations < 5 && (
-                <button
-                  onClick={() => onOpenLocation && onOpenLocation(companyId)}
-                  disabled={!!actionTaken}
-                  style={{
-                    flex: 2, padding: '15px',
-                    background: actionTaken ? '#E5E7EB' : 'linear-gradient(135deg, #1D4ED8, #7C3AED)',
-                    color: actionTaken ? '#9CA3AF' : '#fff',
-                    border: 'none', borderRadius: 14,
-                    fontSize: 14, fontWeight: 900,
-                    fontFamily: 'inherit', cursor: actionTaken ? 'default' : 'pointer',
-                    boxShadow: actionTaken ? 'none' : '0 4px 14px rgba(29,78,216,0.35)',
-                  }}
-                >
-                  {actionTaken ? '✓ Done' : '+ Open Location'}
-                </button>
-              )}
+              {owned.locations < 5 && (() => {
+                const locCost = Math.round(cs.profit * cs.multiplier * (COMPANIES.find(c => c.id === companyId)?.locationCost || 0.15))
+                const canAffordLoc = cash === undefined || cash >= locCost
+                const disabled = !!actionTaken || !canAffordLoc
+                return (
+                  <div style={{ flex: 2, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    <button
+                      onClick={() => !disabled && onOpenLocation && onOpenLocation(companyId)}
+                      disabled={disabled}
+                      style={{
+                        width: '100%', padding: '15px',
+                        background: disabled
+                          ? (actionTaken ? '#E5E7EB' : 'linear-gradient(135deg, #94A3B8, #CBD5E1)')
+                          : 'linear-gradient(135deg, #1D4ED8, #7C3AED)',
+                        color: disabled ? '#9CA3AF' : '#fff',
+                        border: 'none', borderRadius: 14,
+                        fontSize: 14, fontWeight: 900,
+                        fontFamily: 'inherit', cursor: disabled ? 'default' : 'pointer',
+                        boxShadow: disabled ? 'none' : '0 4px 14px rgba(29,78,216,0.35)',
+                      }}
+                    >
+                      {actionTaken ? '✓ Done' : !canAffordLoc ? `Need ${formatMoney(locCost - (cash || 0))} more` : '+ Open Location'}
+                    </button>
+                  </div>
+                )
+              })()}
             </>
           )}
         </div>

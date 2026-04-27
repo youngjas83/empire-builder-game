@@ -28,6 +28,7 @@ export default function CompanyCardBack({
   const actionTaken = turnActions && turnActions[companyId]
   const locationCost = Math.round(currentValue * co.locationCost)
 
+  const canAffordLocation = cash === undefined || cash >= locationCost
   const canSellLocation = entry.locations > 1 && !actionTaken
   const canOpenLocation = entry.locations < 5 && !actionTaken
 
@@ -160,20 +161,31 @@ export default function CompanyCardBack({
               </button>
             )}
             {canOpenLocation && (
-              <button
-                onClick={() => onOpenLocation && onOpenLocation(companyId)}
-                style={{
-                  flex: canSellLocation ? 1 : 1, width: canSellLocation ? undefined : '100%',
-                  padding: '11px',
-                  background: 'linear-gradient(135deg, #16A34A, #22C55E)',
-                  color: '#fff', border: 'none', borderRadius: 12,
-                  fontSize: 13, fontWeight: 900,
-                  fontFamily: 'inherit', cursor: 'pointer',
-                  boxShadow: '0 3px 10px rgba(34,197,94,0.3)',
-                }}
-              >
-                + Open Location · {formatMoney(locationCost)}
-              </button>
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <button
+                  onClick={() => canAffordLocation && onOpenLocation && onOpenLocation(companyId)}
+                  disabled={!canAffordLocation}
+                  style={{
+                    width: '100%',
+                    padding: '11px',
+                    background: canAffordLocation
+                      ? 'linear-gradient(135deg, #16A34A, #22C55E)'
+                      : 'linear-gradient(135deg, #94A3B8, #CBD5E1)',
+                    color: '#fff', border: 'none', borderRadius: 12,
+                    fontSize: 13, fontWeight: 900,
+                    fontFamily: 'inherit',
+                    cursor: canAffordLocation ? 'pointer' : 'default',
+                    boxShadow: canAffordLocation ? '0 3px 10px rgba(34,197,94,0.3)' : 'none',
+                  }}
+                >
+                  + Open Location · {formatMoney(locationCost)}
+                </button>
+                {!canAffordLocation && (
+                  <div style={{ fontSize: 11, fontWeight: 700, color: '#94A3B8', textAlign: 'center' }}>
+                    Need {formatMoney(locationCost - (cash || 0))} more
+                  </div>
+                )}
+              </div>
             )}
           </div>
 

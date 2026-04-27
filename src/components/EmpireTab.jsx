@@ -13,7 +13,7 @@ export default function EmpireTab({
 }) {
   const {
     empireName, turn, cash, portfolio, companyStates,
-    economy, sectorCycles, level, turnActions,
+    economy, sectorCycles, level, turnActions, profitStreak,
   } = state
 
   const netWorth = calcNetWorth(cash, portfolio, companyStates)
@@ -34,7 +34,6 @@ export default function EmpireTab({
     : `End Turn ${turn}`
 
   const econColor = getEconomyColor(economy.state)
-  const showTurn1Hint = turn === 1 && companiesOwned === 0
 
   return (
     <div style={{ height: '100%', overflowY: 'auto', paddingBottom: 110 }}>
@@ -237,22 +236,6 @@ export default function EmpireTab({
           </div>
         )}
 
-        {/* Turn 1 hint arrow */}
-        {showTurn1Hint && (
-          <div style={{
-            background: 'linear-gradient(135deg, #FCD34D, #FBBF24)',
-            borderRadius: 12, padding: '10px 16px',
-            marginBottom: 8,
-            display: 'flex', alignItems: 'center', gap: 8,
-            boxShadow: '0 4px 16px rgba(252,211,77,0.5)',
-          }}>
-            <span style={{ fontSize: 20 }}>👆</span>
-            <span style={{ fontSize: 13, fontWeight: 800, color: '#1E293B' }}>
-              Start with <strong>Consumer Market</strong> — great for beginners!
-            </span>
-          </div>
-        )}
-
         {/* Sector tiles */}
         {Object.values(SECTORS).map(sector => {
           const isUnlocked = level >= sector.unlockLevel
@@ -388,6 +371,16 @@ export default function EmpireTab({
         width: 'calc(100% - 32px)', maxWidth: 398,
         zIndex: 110,
       }}>
+        {/* Streak badge */}
+        {profitStreak >= 3 && (
+          <div style={{
+            textAlign: 'center', marginBottom: 6,
+            fontSize: 13, fontWeight: 900,
+            color: profitStreak >= 7 ? '#DC2626' : '#D97706',
+          }}>
+            {'🔥'.repeat(Math.min(profitStreak, 5))} {profitStreak}-turn profit streak!
+          </div>
+        )}
         <button
           onClick={onEndTurn}
           style={{

@@ -62,10 +62,10 @@ export function createInitialGameState(empireName, difficulty) {
     empireName,
     difficulty,
     turn: 1,
-    cash: 30000000,
+    cash: 10000000,
     portfolio: {},
     companyStates,
-    netWorthHistory: [30000000],
+    netWorthHistory: [10000000],
     economy,
     sectorCycles,
     turnPhase: 'news',
@@ -88,6 +88,15 @@ export function createInitialGameState(empireName, difficulty) {
     chipMessage: '',
     justLeveledUp: null,
     flashSale: null,
+    lastWildCardTurn: 0,
+    achievements: [],
+    profitStreak: 0,
+    lastTurnProfit: 0,
+    newAchievement: null,
+    billionHit: false,
+    showBillionScreen: false,
+    billionTurn: null,
+    onboardingDismissed: false,
   }
 }
 
@@ -223,10 +232,20 @@ export function resolveEndTurn(state) {
   })
 
   // 6. Wild card / setback
+  // Wild cards guaranteed every 3–5 turns; base prob scales with time since last
   let wildCard = null
   const ownedIds = Object.keys(updatedPortfolio)
+  const lastWildCardTurn = state.lastWildCardTurn || 0
+  const turnsSinceWC = turn - lastWildCardTurn
+  let newLastWildCardTurn = lastWildCardTurn
+
   if (ownedIds.length > 0) {
-    const wcProb = WILD_CARD_PROBS[difficulty] || WILD_CARD_PROBS.normal
+    const baseProb = WILD_CARD_PROBS[difficulty] || WILD_CARD_PROBS.normal
+    // Ramp up probability: guaranteed after 5 turns, high after 4, elevated after 3
+    const wcProb = turnsSinceWC >= 5 ? 1.0
+      : turnsSinceWC >= 4 ? 0.70
+      : turnsSinceWC >= 3 ? 0.40
+      : baseProb
 
     if (Math.random() < wcProb) {
       const targetId = ownedIds[Math.floor(Math.random() * ownedIds.length)]
@@ -239,14 +258,13 @@ export function resolveEndTurn(state) {
         effect: 0.25,
         text: getWildCardText(targetId, co),
       }
-      // Apply wild card effect immediately to this turn's profit (bonus)
       const wcBonus = Math.round(companyStates[targetId].profit * 0.25)
       cash += wcBonus
       if (updatedPortfolio[targetId]) {
         updatedPortfolio[targetId].profitsCollected += wcBonus
       }
+      newLastWildCardTurn = turn
     } else if (difficulty === 'hard') {
-      // Check for setbacks on risky companies
       const riskyOwned = ownedIds.filter(id => {
         const co = COMPANIES.find(c => c.id === id)
         return co && co.profSens > 1.0
@@ -264,6 +282,7 @@ export function resolveEndTurn(state) {
         }
         const penalty = Math.round(companyStates[targetId].profit * 0.30)
         cash = Math.max(0, cash - penalty)
+        newLastWildCardTurn = turn
       }
     }
   }
@@ -300,6 +319,32 @@ export function resolveEndTurn(state) {
   const newLevel = calcLevel(newNetWorth)
   const justLeveledUp = newLevel > state.level ? newLevel : null
 
+  // 10. Streak + achievements
+  const prevStreak = state.profitStreak || 0
+  const newStreak = totalProfit > (state.lastTurnProfit || 0) ? prevStreak + 1 : 0
+  const earnedAchievements = state.achievements || []
+  let newAchievement = null
+  const ACHIEVEMENTS = [
+    { id: 'first_buy',      label: '🏆 First Investment!',          check: () => Object.keys(updatedPortfolio).length === 1 && Object.keys(state.portfolio).length === 0 },
+    { id: 'first_million',  label: '💰 First Million Earned!',      check: () => newNetWorth >= 1000000 && state.netWorthHistory[0] < 1000000 },
+    { id: 'five_companies', label: '🏙️ 5 Companies!',               check: () => Object.keys(updatedPortfolio).length >= 5 },
+    { id: 'first_location', label: '🏗️ First Branch Opened!',       check: () => Object.values(updatedPortfolio).some(e => e.locations > 1) && Object.values(state.portfolio).every(e => e.locations === 1) },
+    { id: 'streak_5',       label: '🔥 5-Turn Profit Streak!',      check: () => newStreak === 5 },
+    { id: 'streak_10',      label: '🔥🔥 10-Turn Profit Streak!',   check: () => newStreak === 10 },
+    { id: 'survived_down',  label: '💪 Survived a Downturn!',       check: () => Object.values(newSectorCycles).some(c => c.state !== 'downturn') && Object.values(sectorCycles).some(c => c.state === 'downturn') },
+    { id: 'flash_hunter',   label: '⚡ Flash Sale Hunter!',         check: () => state.turnActions && Object.values(state.turnActions).includes('buy') && state.flashSale },
+    { id: 'level_2',        label: '🎭 Entertainment Unlocked!',    check: () => justLeveledUp === 2 },
+    { id: 'net_100m',       label: '💎 $100M Empire!',              check: () => newNetWorth >= 100000000 && (state.netWorthHistory.slice(-1)[0] || 0) < 100000000 },
+    { id: 'net_500m',       label: '👑 $500M Empire!',              check: () => newNetWorth >= 500000000 && (state.netWorthHistory.slice(-1)[0] || 0) < 500000000 },
+  ]
+  for (const ach of ACHIEVEMENTS) {
+    if (!earnedAchievements.includes(ach.id) && ach.check()) {
+      earnedAchievements.push(ach.id)
+      newAchievement = ach
+      break // show one at a time
+    }
+  }
+
   return {
     ...state,
     cash,
@@ -320,7 +365,15 @@ export function resolveEndTurn(state) {
     justLeveledUp,
     earnedThisTurn,
     showEarnAnimation: earnedThisTurn > 0,
-    phase: newNetWorth >= 1000000000 ? 'win' : 'game',
+    lastWildCardTurn: newLastWildCardTurn,
+    achievements: earnedAchievements,
+    profitStreak: newStreak,
+    lastTurnProfit: totalProfit,
+    newAchievement,
+    phase: 'game',
+    billionHit: state.billionHit || newNetWorth >= 1000000000,
+    showBillionScreen: newNetWorth >= 1000000000 && !state.billionHit,
+    billionTurn: (!state.billionHit && newNetWorth >= 1000000000) ? turn : state.billionTurn,
   }
 }
 
@@ -474,40 +527,119 @@ export function sellLocation(state, companyId) {
 
 // ─── Wild Card Text ───────────────────────────────────────────────────────────
 
+// Multiple wild card texts per company — picked randomly for variety
 const WILD_CARD_TEXTS = {
-  burgerblast: "BurgerBlast goes VIRAL on TikTok — lines stretching around the block!",
-  novadrip: "NovaDrip collab drops and sells out in 90 seconds flat!",
-  glowlab: "Celebrity mega-endorsement for GlowLab — subscriptions exploding!",
-  freshmart: "FreshMart named 'Best Value Store' — customer surge incoming!",
-  toycraze: "ToyCraze featured in blockbuster movie — demand going insane!",
-  pixelwear: "PixelWear worn at major esports championship — instant sellout!",
-  skyflats: "SkyFlats wins Best Apartment award — waiting list just doubled!",
-  megamall: "MegaMall viral pop-up event drives biggest foot traffic in years!",
-  storesafe: "StoreSafe opens premium downtown location to packed waiting list!",
-  towerone: "TowerOne lands massive 5-year lease with Fortune 500 company!",
-  warehousex: "WarehouseX wins 10-year contract with nation's biggest retailer!",
-  sunvilla: "SunVilla voted #1 Resort — bookings up 200% overnight!",
-  streamflix: "StreamFlix lands exclusive deal with the world's biggest director — subscribers surge!",
-  thunderfc: "Thunder FC wins the Champions League — global merchandise revenue EXPLODES!",
-  gameboxstudios: "GameBox Studios' new title breaks all sales records in its first 48 hours!",
-  celebbuzz: "CelebBuzz client goes mega-viral — agency fees quadruple overnight!",
-  soundwave: "SoundWave's headlining artist breaks streaming records — royalty windfall!",
-  nightowl: "NightOwl Cinemas lands exclusive blockbuster premiere rights for the summer!",
+  burgerblast: [
+    "BurgerBlast goes VIRAL on TikTok — lines stretching around the block! 🍔🔥",
+    "A famous rapper just said BurgerBlast is his favourite restaurant. Sales SURGING! 🎤",
+    "BurgerBlast's secret sauce recipe leaks online — everyone wants to try the real thing! 📱",
+  ],
+  novadrip: [
+    "NovaDrip collab with a mega-celebrity drops and sells out in 90 seconds flat! 👟💥",
+    "The most-followed athlete on Instagram wore NovaDrip at the Olympics! 🏅",
+    "NovaDrip limited edition sells for 10× retail on resale sites — hype at max! 🔥",
+  ],
+  glowlab: [
+    "Celebrity mega-endorsement for GlowLab — subscriptions exploding overnight! ✨",
+    "GlowLab goes viral after a skin transformation video gets 50 million views! 📱",
+    "Doctors recommend GlowLab on a prime-time TV show — sales rocket! 📺",
+  ],
+  freshmart: [
+    "FreshMart named 'Best Value Store of the Year' — customer surge incoming! 🛒",
+    "Inflation hits hard and everyone rushes to FreshMart to save money! 💰",
+    "FreshMart's house-brand foods go viral for being tastier than name brands! 😮",
+  ],
+  toycraze: [
+    "ToyCraze toy featured in a blockbuster movie — demand going absolutely insane! 🎬",
+    "The world's most popular kids' YouTuber reviews ToyCraze — INSTANT sellout! 📹",
+    "ToyCraze wins 'Toy of the Year' — every kid on the planet wants one! 🏆",
+  ],
+  pixelwear: [
+    "PixelWear worn at a major esports world championship — instant global sellout! 🕹️",
+    "The world's top streamer wore PixelWear live to 8 million viewers! 🎮",
+    "PixelWear collab with the hottest video game drops — sold out in minutes! ⚡",
+  ],
+  skyflats: [
+    "SkyFlats wins 'Best Luxury Apartment' award — waiting list just doubled! 🏆",
+    "A major tech company moves HQ next door — SkyFlats rent premiums surge! 💻",
+    "SkyFlats featured in a home design show — enquiries through the roof! 📺",
+  ],
+  megamall: [
+    "MegaMall viral pop-up event drives biggest foot traffic in 5 years! 🎉",
+    "A massive concert inside MegaMall goes viral — everyone wants to visit! 🎵",
+    "MegaMall launches a food hall that gets a rave review from a top critic! 🍽️",
+  ],
+  storesafe: [
+    "StoreSafe's new smart-lock units sell out — waiting list growing fast! 🔐",
+    "City announces major new housing development next to StoreSafe — demand surges! 🏗️",
+    "StoreSafe wins government contract for secure document storage! 📁",
+  ],
+  towerone: [
+    "TowerOne lands a massive 10-year lease with a Fortune 500 company! 🏢",
+    "TowerOne renovated lobby goes viral — suddenly the coolest office in town! ✨",
+    "TowerOne signs a deal to host a major tech conference every year! 💻",
+  ],
+  warehousex: [
+    "WarehouseX wins a 10-year contract with the nation's biggest online retailer! 📦",
+    "New automated robots triple WarehouseX efficiency — costs plummet! 🤖",
+    "WarehouseX named the safest and fastest shipper — brands rushing to sign! 🚀",
+  ],
+  sunvilla: [
+    "SunVilla voted #1 Resort in the world — bookings up 200% overnight! 🏖️",
+    "A celebrity influencer's vacation at SunVilla gets 20 million likes! 📱",
+    "SunVilla wins luxury travel award — premium suites booked out for 2 years! 🏆",
+  ],
+  streamflix: [
+    "StreamFlix's new show becomes the most-watched series EVER — subscriptions surge! 🎬",
+    "StreamFlix lands an exclusive deal with the world's most famous director! 🎥",
+    "StreamFlix raises prices and nobody cancels — loyalty is off the charts! 💪",
+  ],
+  thunderfc: [
+    "Thunder FC wins the Champions League — global merchandise revenue EXPLODES! ⚽🏆",
+    "Thunder FC signs the world's highest-paid player — shirt sales go crazy! 👕",
+    "Thunder FC's new video game collaboration breaks all records! 🕹️",
+  ],
+  gameboxstudios: [
+    "GameBox Studios' new title breaks ALL sales records in its first 48 hours! 🕹️🔥",
+    "GameBox Studios announces a sequel to its biggest franchise — pre-orders insane! 🎮",
+    "GameBox Studios' game gets turned into a blockbuster movie deal! 🎬",
+  ],
+  celebbuzz: [
+    "CelebBuzz client goes mega-viral overnight — agency fees quadruple! 🌟💥",
+    "CelebBuzz lands three A-list celebrities in one week — hottest agency in town! 🎤",
+    "A CelebBuzz client wins a major award — everyone wants the same agency! 🏆",
+  ],
+  soundwave: [
+    "SoundWave's top artist breaks the streaming record — royalty windfall! 🎵🔥",
+    "SoundWave announces an exclusive live concert series — tickets sell out instantly! 🎸",
+    "SoundWave partners with the world's biggest phone brand — 50M new users! 📱",
+  ],
+  nightowl: [
+    "NightOwl Cinemas lands exclusive summer blockbuster premiere rights! 🍿🎬",
+    "NightOwl's new luxury recliner seats go viral — sold-out shows every night! 💺",
+    "NightOwl partners with a food delivery app — in-seat ordering surges profits! 🍕",
+  ],
 }
 
 const SETBACK_TEXTS = {
-  novadrip: "NovaDrip hit by safety lawsuit — sales grinding to a halt!",
-  toycraze: "ToyCraze trend reverses overnight — stores can't give them away!",
-  pixelwear: "PixelWear latest drop gets roasted online — returns flooding in!",
-  megamall: "MegaMall anchor tenant just announced store closure!",
-  towerone: "TowerOne major tenant announces work-from-home permanently!",
-  gameboxstudios: "GameBox Studios' latest release gets review-bombed — sales collapse!",
-  celebbuzz: "CelebBuzz top client in scandal — agency reputation takes a hit!",
-  nightowl: "NightOwl Cinemas loses exclusive deal to a streaming service!",
+  novadrip: "NovaDrip hit by a product safety recall — sales grinding to a halt! 😬",
+  toycraze: "ToyCraze trend reverses overnight — stores can't give them away! 📉",
+  pixelwear: "PixelWear's latest drop gets absolutely roasted online — returns flooding in! 😬",
+  megamall: "MegaMall's biggest anchor tenant just announced store closure! 🏪",
+  towerone: "TowerOne's major tenant goes fully remote — offices sitting empty! 🏙️",
+  gameboxstudios: "GameBox Studios' latest release gets review-bombed — sales collapse! 💥",
+  celebbuzz: "CelebBuzz top client caught in a scandal — agency reputation takes a big hit! 😱",
+  nightowl: "NightOwl Cinemas loses a major exclusive deal to a streaming service! 😤",
+  sunvilla: "SunVilla hit by a tropical storm — resort closed for emergency repairs! ⛈️",
+  celebbuzz: "CelebBuzz's biggest star just quit — half the client list is in chaos! 🌪️",
 }
 
 function getWildCardText(id, co) {
-  return WILD_CARD_TEXTS[id] || `${co ? co.name : id} has an amazing turn — profits surge 25%!`
+  const options = WILD_CARD_TEXTS[id]
+  if (Array.isArray(options) && options.length > 0) {
+    return options[Math.floor(Math.random() * options.length)]
+  }
+  return `${co ? co.name : id} has an amazing turn — profits surge 25%! 🚀`
 }
 
 function getSetbackText(id, co) {
