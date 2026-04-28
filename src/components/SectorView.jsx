@@ -36,13 +36,12 @@ export default function SectorView({
 
   // Sort companies: by badge tier first (safe → steady → balanced → risk → wildcard → fading),
   // then by base value ascending within each tier (cheapest first)
-  const BADGE_ORDER = { safeBet: 0, steadyGrower: 1, balanced: 2, highRisk: 3, wildCard: 4, fadingOut: 5 }
   const companies = COMPANIES
     .filter(c => c.sector === sectorId)
     .sort((a, b) => {
-      const tierDiff = (BADGE_ORDER[a.badge] ?? 99) - (BADGE_ORDER[b.badge] ?? 99)
-      if (tierDiff !== 0) return tierDiff
-      return (a.baseProfit * a.baseMultiplier) - (b.baseProfit * b.baseMultiplier)
+      const csA = companyStates[a.id] || { profit: a.baseProfit, multiplier: a.baseMultiplier }
+      const csB = companyStates[b.id] || { profit: b.baseProfit, multiplier: b.baseMultiplier }
+      return Math.round(csA.profit * csA.multiplier) - Math.round(csB.profit * csB.multiplier)
     })
   const sectorCycle = sectorCycles[sectorId]
   const sectorState = sectorCycle ? sectorCycle.state : 'normal'
