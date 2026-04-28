@@ -313,6 +313,7 @@ export default function App() {
         SFX.sell()
       } else if (actionDialog.type === 'openLocation') {
         newState = openLocation(prev, actionDialog.companyId)
+        newState = { ...newState, sawLocationTutorial: true }
         SFX.openLocation()
       } else if (actionDialog.type === 'sellLocation') {
         newState = sellLocation(prev, actionDialog.companyId)
