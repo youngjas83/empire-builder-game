@@ -411,6 +411,7 @@ export default function EmpireTab({
           const isUnlocked = level >= sector.unlockLevel
           const sectorCycle = sectorCycles[sector.id]
           const sectorState = sectorCycle ? sectorCycle.state : 'normal'
+          const preSignal = sectorCycle?.preSignal
           const ownedInSector = Object.keys(portfolio).filter(id => {
             const co = COMPANIES.find(c => c.id === id)
             return co && co.sector === sector.id
@@ -421,6 +422,52 @@ export default function EmpireTab({
             return co ? co.emoji : null
           }).filter(Boolean)
           const stateColor = getSectorStateColor(sectorState)
+
+          // Visual style per cycle state
+          const tileStyle = (() => {
+            if (sectorState === 'boom') return {
+              background: `linear-gradient(135deg, #FFFBEB 0%, #FEF9EC 50%, ${sector.color}10 100%)`,
+              border: '2px solid #FCD34D',
+              boxShadow: '0 4px 20px rgba(252,211,77,0.35)',
+              iconBg: 'linear-gradient(135deg, #FEF3C7, #FDE68A)',
+              iconBorder: '#FCD34D',
+              iconGlow: '0 0 22px rgba(252,211,77,0.7)',
+              nameColor: '#92400E',
+              animClass: 'sectorBoomPulse',
+            }
+            if (sectorState === 'downturn') return {
+              background: hasOwned ? 'linear-gradient(135deg, #FEF2F2, #fff 70%)' : '#FAFAFA',
+              border: '2px solid #FCA5A5',
+              boxShadow: '0 1px 6px rgba(239,68,68,0.12)',
+              iconBg: '#FEE2E2',
+              iconBorder: '#FCA5A5',
+              iconGlow: 'none',
+              nameColor: '#1E293B',
+              opacity: 0.82,
+              animClass: null,
+            }
+            if (preSignal === 'preSlowdown') return {
+              background: hasOwned ? `linear-gradient(135deg, ${sector.color}0C, #FFFBEB 70%)` : '#FFFDF5',
+              border: `2px solid #FCD34D80`,
+              boxShadow: '0 2px 10px rgba(252,211,77,0.15)',
+              iconBg: hasOwned ? `linear-gradient(135deg, ${sector.color}35, ${sector.color}18)` : `${sector.color}15`,
+              iconBorder: `${sector.color}45`,
+              iconGlow: 'none',
+              nameColor: '#1E293B',
+              animClass: null,
+            }
+            // Normal / preBoom
+            return {
+              background: hasOwned ? `linear-gradient(135deg, ${sector.color}0C, #fff 60%)` : '#fff',
+              border: `2px solid ${hasOwned ? sector.color : '#E2E8F0'}`,
+              boxShadow: hasOwned ? `0 4px 18px ${sector.color}28` : '0 1px 4px rgba(0,0,0,0.04)',
+              iconBg: hasOwned ? `linear-gradient(135deg, ${sector.color}35, ${sector.color}18)` : `${sector.color}15`,
+              iconBorder: `${sector.color}45`,
+              iconGlow: hasOwned ? `0 0 20px ${sector.color}45` : 'none',
+              nameColor: '#1E293B',
+              animClass: null,
+            }
+          })()
 
           if (!isUnlocked) {
             return (
@@ -456,40 +503,40 @@ export default function EmpireTab({
             <button
               key={sector.id}
               onClick={() => onSelectSector(sector.id)}
+              className={tileStyle.animClass || ''}
               style={{
                 width: '100%',
-                background: hasOwned
-                  ? `linear-gradient(135deg, ${sector.color}0C, #fff 60%)`
-                  : '#fff',
-                border: `2px solid ${hasOwned ? sector.color : '#E2E8F0'}`,
+                background: tileStyle.background,
+                border: tileStyle.border,
                 borderRadius: 16, padding: '14px 16px',
                 marginBottom: 10,
                 display: 'flex', alignItems: 'center', gap: 12,
                 cursor: 'pointer', fontFamily: 'inherit',
                 textAlign: 'left',
-                boxShadow: hasOwned
-                  ? `0 4px 18px ${sector.color}28`
-                  : '0 1px 4px rgba(0,0,0,0.04)',
-                transition: 'all 0.15s',
+                boxShadow: tileStyle.boxShadow,
+                opacity: tileStyle.opacity || 1,
+                transition: 'all 0.2s',
               }}
             >
               {/* Sector icon */}
               <div style={{
                 width: 52, height: 52, borderRadius: 14, flexShrink: 0,
-                background: hasOwned
-                  ? `linear-gradient(135deg, ${sector.color}35, ${sector.color}18)`
-                  : `${sector.color}15`,
-                border: `2px solid ${sector.color}45`,
+                background: tileStyle.iconBg,
+                border: `2px solid ${tileStyle.iconBorder}`,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontSize: 26,
-                boxShadow: hasOwned ? `0 0 20px ${sector.color}45` : 'none',
+                boxShadow: tileStyle.iconGlow,
               }}>
-                {sector.emoji}
+                {sectorState === 'boom' ? (
+                  <span style={{ filter: 'drop-shadow(0 0 8px rgba(252,211,77,0.8))' }}>{sector.emoji}</span>
+                ) : sectorState === 'downturn' ? (
+                  <span style={{ filter: 'grayscale(0.5) opacity(0.75)' }}>{sector.emoji}</span>
+                ) : sector.emoji}
               </div>
 
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                  <span style={{ fontSize: 16, fontWeight: 800, color: '#1E293B' }}>
+                  <span style={{ fontSize: 16, fontWeight: 800, color: tileStyle.nameColor }}>
                     {sector.name}
                   </span>
                   <div style={{
@@ -504,7 +551,7 @@ export default function EmpireTab({
                   </div>
                 </div>
 
-                <div style={{ fontSize: 12, color: '#6B7280', fontWeight: 600, lineHeight: 1.4, marginBottom: hasOwned ? 6 : 0 }}>
+                <div style={{ fontSize: 12, color: sectorState === 'downturn' ? '#9CA3AF' : '#6B7280', fontWeight: 600, lineHeight: 1.4, marginBottom: hasOwned ? 6 : 0 }}>
                   {sector.description}
                 </div>
 
@@ -514,13 +561,14 @@ export default function EmpireTab({
                     {ownedEmojis.map((emoji, i) => (
                       <span key={i} style={{
                         fontSize: 15,
-                        background: sector.color + '22',
+                        background: sectorState === 'downturn' ? '#FEE2E280' : sector.color + '22',
                         borderRadius: 7, padding: '1px 5px',
+                        filter: sectorState === 'downturn' ? 'grayscale(0.4)' : 'none',
                       }}>
                         {emoji}
                       </span>
                     ))}
-                    <span style={{ fontSize: 11, fontWeight: 800, color: sector.color, marginLeft: 2 }}>
+                    <span style={{ fontSize: 11, fontWeight: 800, color: sectorState === 'downturn' ? '#EF4444' : sector.color, marginLeft: 2 }}>
                       {ownedInSector.length} owned
                     </span>
                   </div>
@@ -672,6 +720,13 @@ export default function EmpireTab({
         @keyframes endTurnPulse {
           0%, 100% { box-shadow: 0 6px 24px rgba(34,197,94,0.45) }
           50% { box-shadow: 0 8px 36px rgba(34,197,94,0.75) }
+        }
+        @keyframes boomPulse {
+          0%, 100% { box-shadow: 0 4px 20px rgba(252,211,77,0.35) }
+          50%       { box-shadow: 0 6px 32px rgba(252,211,77,0.65) }
+        }
+        .sectorBoomPulse {
+          animation: boomPulse 2.2s ease-in-out infinite;
         }
       `}</style>
     </div>

@@ -85,30 +85,71 @@ export default function CompanyCard({
     contextBanner = { text: '📉 This company fades every turn — even in good times', color: '#9CA3AF', bg: '#F8FAFC', border: '#E2E8F0' }
   }
 
+  // Risk-tier visual config applied to the art panel
+  const riskTier = (() => {
+    if (co.badge === 'fadingOut') return 'fading'
+    if (co.badge === 'wildCard') return 'wild'
+    if (co.badge === 'highRisk') return 'high'
+    if (co.badge === 'safeBet') return 'safe'
+    return 'normal'
+  })()
+
   return (
     <div style={{
       position: 'fixed', inset: 0, zIndex: 150,
-      background: '#EFF6FF',
+      background: riskTier === 'fading' ? '#F1F5F9' : '#EFF6FF',
       display: 'flex', flexDirection: 'column',
       overflowY: 'auto',
     }}>
+      <style>{`
+        @keyframes shimmerSweep {
+          0%   { transform: translateX(-100%) skewX(-15deg) }
+          100% { transform: translateX(250%) skewX(-15deg) }
+        }
+        @keyframes wildGlow {
+          0%, 100% { box-shadow: inset 0 0 60px rgba(124,58,237,0.15) }
+          50%       { box-shadow: inset 0 0 80px rgba(239,68,68,0.25) }
+        }
+      `}</style>
 
       {/* Art Panel */}
       <div style={{
         minHeight: 175, flexShrink: 0,
-        background: `linear-gradient(150deg, ${co.gradientFrom} 0%, ${co.gradientTo} 100%)`,
+        background: riskTier === 'fading'
+          ? `linear-gradient(150deg, #94A3B820 0%, #CBD5E150 40%, ${co.gradientFrom}60 100%)`
+          : `linear-gradient(150deg, ${co.gradientFrom} 0%, ${co.gradientTo} 100%)`,
         display: 'flex', flexDirection: 'column',
         alignItems: 'center', justifyContent: 'center',
         position: 'relative',
         paddingTop: 'calc(env(safe-area-inset-top, 0px) + 48px)',
         paddingBottom: 24,
+        filter: riskTier === 'fading' ? 'saturate(0.45)' : 'none',
+        animation: riskTier === 'wild' ? 'wildGlow 3s ease-in-out infinite' : 'none',
       }}>
+        {/* Shimmer sweep for wild-card companies */}
+        {riskTier === 'wild' && (
+          <div style={{
+            position: 'absolute', inset: 0, overflow: 'hidden',
+            borderRadius: 0, pointerEvents: 'none', zIndex: 0,
+          }}>
+            <div style={{
+              position: 'absolute', top: 0, bottom: 0, width: '60%',
+              background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent)',
+              animation: 'shimmerSweep 2.8s ease-in-out infinite',
+            }} />
+          </div>
+        )}
+
         {/* Subtle radial glow behind emoji */}
         <div style={{
           position: 'absolute',
           width: 160, height: 160,
           borderRadius: '50%',
-          background: 'rgba(255,255,255,0.15)',
+          background: riskTier === 'safe'
+            ? 'rgba(134,239,172,0.25)'
+            : riskTier === 'high'
+            ? 'rgba(239,68,68,0.20)'
+            : 'rgba(255,255,255,0.15)',
           filter: 'blur(24px)',
           pointerEvents: 'none',
         }} />
@@ -225,7 +266,15 @@ export default function CompanyCard({
         {/* Company emoji with glow ring */}
         <div style={{
           fontSize: 72,
-          filter: 'drop-shadow(0 6px 20px rgba(0,0,0,0.25))',
+          filter: riskTier === 'safe'
+            ? 'drop-shadow(0 6px 20px rgba(0,0,0,0.20)) drop-shadow(0 0 18px rgba(134,239,172,0.6))'
+            : riskTier === 'high'
+            ? 'drop-shadow(0 6px 20px rgba(0,0,0,0.30)) drop-shadow(0 0 22px rgba(239,68,68,0.55))'
+            : riskTier === 'wild'
+            ? 'drop-shadow(0 6px 20px rgba(0,0,0,0.30)) drop-shadow(0 0 28px rgba(124,58,237,0.60))'
+            : riskTier === 'fading'
+            ? 'drop-shadow(0 4px 10px rgba(0,0,0,0.15)) grayscale(0.6)'
+            : 'drop-shadow(0 6px 20px rgba(0,0,0,0.25))',
           lineHeight: 1,
           position: 'relative', zIndex: 1,
         }}>
@@ -246,6 +295,30 @@ export default function CompanyCard({
         }}>
           {sectorLabel}
         </div>
+
+        {/* Risk tier strip */}
+        {riskTier !== 'normal' && (
+          <div style={{
+            marginTop: 8,
+            padding: '3px 14px', borderRadius: 20,
+            fontSize: 11, fontWeight: 900, letterSpacing: '0.05em',
+            backdropFilter: 'blur(8px)',
+            background: riskTier === 'safe'  ? 'rgba(134,239,172,0.30)'
+                      : riskTier === 'high'  ? 'rgba(239,68,68,0.35)'
+                      : riskTier === 'wild'  ? 'rgba(124,58,237,0.40)'
+                      : 'rgba(0,0,0,0.20)',
+            color: riskTier === 'fading' ? 'rgba(255,255,255,0.50)' : '#fff',
+            border: riskTier === 'safe'  ? '1px solid rgba(134,239,172,0.5)'
+                  : riskTier === 'high'  ? '1px solid rgba(239,68,68,0.5)'
+                  : riskTier === 'wild'  ? '1px solid rgba(167,139,250,0.5)'
+                  : '1px solid rgba(255,255,255,0.15)',
+          }}>
+            {riskTier === 'safe'   ? '🛡️ Safe Bet'
+           : riskTier === 'high'  ? '🔥 High Risk'
+           : riskTier === 'wild'  ? '🃏 Wild Card'
+           : '📉 Fading Out'}
+          </div>
+        )}
       </div>
 
       {/* Card Body */}

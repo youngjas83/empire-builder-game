@@ -2,16 +2,27 @@ import React from 'react'
 import Chip from './Chip.jsx'
 import { formatMoney } from '../game/engine.js'
 
+// Deterministic confetti pieces — same layout every render, no random jitter
+const CONFETTI_PIECES = [
+  { left: 8,  delay: 0.0, dur: 2.6, color: '#FCD34D', shape: 'circle', size: 10 },
+  { left: 18, delay: 0.3, dur: 3.0, color: '#86EFAC', shape: 'rect',   size: 8  },
+  { left: 28, delay: 0.1, dur: 2.4, color: '#93C5FD', shape: 'circle', size: 7  },
+  { left: 38, delay: 0.5, dur: 2.8, color: '#F9A8D4', shape: 'rect',   size: 9  },
+  { left: 50, delay: 0.2, dur: 3.1, color: '#FCD34D', shape: 'circle', size: 11 },
+  { left: 60, delay: 0.4, dur: 2.5, color: '#C4B5FD', shape: 'rect',   size: 8  },
+  { left: 70, delay: 0.1, dur: 2.9, color: '#86EFAC', shape: 'circle', size: 9  },
+  { left: 80, delay: 0.6, dur: 2.7, color: '#FCA5A5', shape: 'rect',   size: 7  },
+  { left: 90, delay: 0.3, dur: 3.2, color: '#FCD34D', shape: 'circle', size: 10 },
+  { left: 12, delay: 0.7, dur: 2.3, color: '#93C5FD', shape: 'rect',   size: 9  },
+  { left: 44, delay: 0.8, dur: 3.0, color: '#F9A8D4', shape: 'circle', size: 7  },
+  { left: 65, delay: 0.2, dur: 2.6, color: '#C4B5FD', shape: 'rect',   size: 11 },
+]
+
 export default function WildCardScreen({ wildCard, onContinue }) {
   if (!wildCard) return null
 
   const isSetback = wildCard.type === 'setback'
   const mood = isSetback ? 'worried' : 'excited'
-
-  // Calculate actual dollar amounts
-  const bonusPct = Math.abs(wildCard.effect)
-  // We don't have the exact profit here, but we can show the effect percentage clearly
-  // The actual amount was already applied — show a celebration/commiseration message
 
   const headerText = isSetback ? '💥 SETBACK!' : '🃏 WILD CARD!'
 
@@ -43,6 +54,7 @@ export default function WildCardScreen({ wildCard, onContinue }) {
       alignItems: 'center', justifyContent: 'center',
       padding: '32px 24px',
       animation: 'wildCardIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+      overflow: 'hidden',
     }}>
       <style>{`
         @keyframes wildCardIn {
@@ -53,7 +65,26 @@ export default function WildCardScreen({ wildCard, onContinue }) {
           0%, 100% { box-shadow: 0 0 30px ${theme.glow}40 }
           50%       { box-shadow: 0 0 60px ${theme.glow}80 }
         }
+        @keyframes confettiFall {
+          0%   { transform: translateY(-20px) rotate(0deg);   opacity: 1 }
+          80%  { opacity: 1 }
+          100% { transform: translateY(105vh) rotate(540deg); opacity: 0 }
+        }
       `}</style>
+
+      {/* Confetti (wins only) */}
+      {!isSetback && CONFETTI_PIECES.map((p, i) => (
+        <div key={i} style={{
+          position: 'absolute',
+          top: -16, left: `${p.left}%`,
+          width: p.size, height: p.size,
+          borderRadius: p.shape === 'circle' ? '50%' : 2,
+          background: p.color,
+          animation: `confettiFall ${p.dur}s ${p.delay}s ease-in infinite`,
+          pointerEvents: 'none',
+          zIndex: 0,
+        }} />
+      ))}
 
       {/* Glow ring */}
       <div style={{
