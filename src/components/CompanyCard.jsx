@@ -460,7 +460,7 @@ export default function CompanyCard({
             </div>
             <StabilityDots profSens={co.profSens} />
             <div style={{ fontSize: 10, color: '#9CA3AF', fontWeight: 600, marginTop: 4 }}>
-              {co.profSens <= 0.25 ? 'Very Stable' : co.profSens <= 0.5 ? 'Stable' : co.profSens <= 1.0 ? 'Moderate' : 'Volatile'}
+              {co.profSens <= 0.25 ? 'Very Stable' : co.profSens <= 0.50 ? 'Stable' : co.profSens <= 0.90 ? 'Moderate' : co.profSens <= 1.20 ? 'Risky' : 'Volatile'}
             </div>
           </div>
         </div>
@@ -574,15 +574,15 @@ export default function CompanyCard({
 }
 
 function StabilityDots({ profSens }) {
+  // More dots = more stable. Low profSens = stable = 5 dots. High profSens = volatile = 1 dot.
   let dots
-  if (profSens <= 0)      dots = 1
-  else if (profSens <= 0.25) dots = 1
-  else if (profSens <= 0.50) dots = 2
-  else if (profSens <= 0.90) dots = 3
-  else if (profSens <= 1.20) dots = 4
-  else                       dots = 5
+  if (profSens <= 0.25)      dots = 5   // Very Stable
+  else if (profSens <= 0.50) dots = 4   // Stable
+  else if (profSens <= 0.90) dots = 3   // Moderate
+  else if (profSens <= 1.20) dots = 2   // Risky
+  else                       dots = 1   // Volatile
 
-  const dotColor = dots <= 2 ? '#22C55E' : dots <= 3 ? '#EAB308' : '#EF4444'
+  const dotColor = dots >= 4 ? '#22C55E' : dots === 3 ? '#EAB308' : '#EF4444'
 
   return (
     <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>

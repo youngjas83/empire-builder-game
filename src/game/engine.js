@@ -335,7 +335,13 @@ export function resolveEndTurn(state) {
     }
   }
 
-  // 8. Next turn's news + extract ±6% companyNews effects
+  // 8. Net worth + level (must come before news so newLevel is defined)
+  const newNetWorth = calcNetWorth(cash, updatedPortfolio, companyStates)
+  const newNetWorthHistory = [...netWorthHistory.slice(-19), newNetWorth]
+  const newLevel = calcLevel(newNetWorth)
+  const justLeveledUp = newLevel > state.level ? newLevel : null
+
+  // 9. Next turn's news + extract ±6% companyNews effects
   const nextTurn = turn + 1
   const newNews = generateNews(
     newEconomy,
@@ -352,12 +358,6 @@ export function resolveEndTurn(state) {
       else if (h.sentiment === 'negative') newCompanyNewsEffects[h.companyId] = -0.06
     }
   })
-
-  // 9. Net worth + level
-  const newNetWorth = calcNetWorth(cash, updatedPortfolio, companyStates)
-  const newNetWorthHistory = [...netWorthHistory.slice(-19), newNetWorth]
-  const newLevel = calcLevel(newNetWorth)
-  const justLeveledUp = newLevel > state.level ? newLevel : null
 
   // 10. Streak + achievements
   const prevStreak = state.profitStreak || 0
