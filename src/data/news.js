@@ -174,7 +174,7 @@ export const COMPANY_GOSSIP = {
     ],
     neutral: [
       "🍔 BurgerBlast rolls out loyalty app — early download numbers strong",
-      "🍔 BurgerBlast opens 50 new locations in the Midwest this quarter",
+      "🍔 BurgerBlast drive-thru overhaul rolls out across 500+ restaurants — speed scores up",
     ],
     negative: [
       "🍔 Health food trend concerns analysts — will BurgerBlast adapt in time?",

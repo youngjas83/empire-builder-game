@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { COMPANIES, SECTORS } from '../data/companies.js'
+import { ACHIEVEMENTS_CATALOG } from '../game/engine.js'
 import Sparkline from './Sparkline.jsx'
 import {
   formatMoney, calcNetWorth, calcLocationsMultiplier,
@@ -8,10 +9,11 @@ import {
 
 export default function MarketTab({
   economy, sectorCycles, netWorthHistory, cash, difficulty, level,
-  portfolio, companyStates, onSelectCompany,
+  portfolio, companyStates, onSelectCompany, achievements,
 }) {
   const [showMOIC, setShowMOIC] = useState(true)
   const [showMOICTooltip, setShowMOICTooltip] = useState(false)
+  const [expandedROI, setExpandedROI] = useState(null)
 
   const econColor = getEconomyColor(economy.state)
   const interestRate = difficulty === 'easy' ? 3 : difficulty === 'hard' ? 1 : 2
@@ -53,7 +55,7 @@ export default function MarketTab({
             padding: '10px 14px', border: '1px solid rgba(255,255,255,0.15)',
           }}>
             <div style={{ fontSize: 10, fontWeight: 800, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>
-              📈 Net Worth
+              📈 Empire Value
             </div>
             <div style={{ fontSize: 20, fontWeight: 900, color: '#60A5FA' }}>
               {formatMoney(netWorth)}
@@ -68,7 +70,7 @@ export default function MarketTab({
         <div style={{ background: '#fff', borderRadius: 14, padding: '14px', marginBottom: 12, boxShadow: '0 1px 4px rgba(0,0,0,0.05)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
             <div style={{ fontSize: 12, fontWeight: 800, color: '#374151', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-              📈 Net Worth History
+              📈 Empire Value History
             </div>
             <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
               {/* MOIC tooltip */}
@@ -122,7 +124,7 @@ export default function MarketTab({
         {/* Net Worth Breakdown */}
         <div style={{ background: '#fff', borderRadius: 14, padding: '14px', marginBottom: 12, boxShadow: '0 1px 4px rgba(0,0,0,0.05)' }}>
           <div style={{ fontSize: 12, fontWeight: 800, color: '#374151', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12 }}>
-            💼 Net Worth Breakdown
+            💼 Empire Value Breakdown
           </div>
 
           {/* Cash row */}
@@ -182,7 +184,7 @@ export default function MarketTab({
           {/* Divider + Total */}
           <div style={{ borderTop: '2px solid #E2E8F0', marginTop: 6, paddingTop: 10 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: 15, fontWeight: 900, color: '#1E293B' }}>📈 Net Worth</span>
+              <span style={{ fontSize: 15, fontWeight: 900, color: '#1E293B' }}>📈 Empire Value</span>
               <span style={{ fontSize: 20, fontWeight: 900, color: '#1D4ED8' }}>{formatMoney(netWorth)}</span>
             </div>
             <div style={{
@@ -211,56 +213,82 @@ export default function MarketTab({
               const currentValue = Math.round(cs.profit * cs.multiplier * locMult)
               const totalInvested = (entry.purchasePrice || 0) + (entry.locationSpend || 0)
               const profitsCollected = entry.profitsCollected || 0
-              const totalGain = (currentValue - totalInvested) + profitsCollected
+              const valueChange = currentValue - totalInvested
+              const totalGain = valueChange + profitsCollected
               const roi = totalInvested > 0 ? Math.round((totalGain / totalInvested) * 100) : 0
               const gainColor = totalGain >= 0 ? '#16A34A' : '#DC2626'
               const gainBg = totalGain >= 0 ? '#F0FDF4' : '#FEF2F2'
+              const isExpanded = expandedROI === id
               return (
                 <div
                   key={id}
-                  onClick={() => onSelectCompany && onSelectCompany(id)}
                   style={{
                     background: '#F8FAFC', borderRadius: 12,
-                    padding: '12px', marginBottom: 8,
-                    border: '1px solid #E2E8F0', cursor: 'pointer',
+                    marginBottom: 8, border: '1px solid #E2E8F0', overflow: 'hidden',
                   }}
                 >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span style={{ fontSize: 22 }}>{co.emoji}</span>
-                      <div>
-                        <div style={{ fontSize: 14, fontWeight: 900, color: '#1E293B' }}>{co.name}</div>
-                        <div style={{ fontSize: 11, fontWeight: 600, color: '#9CA3AF' }}>
-                          {entry.locations} location{entry.locations !== 1 ? 's' : ''}
+                  <div style={{ padding: '12px', cursor: 'pointer' }} onClick={() => onSelectCompany && onSelectCompany(id)}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{ fontSize: 22 }}>{co.emoji}</span>
+                        <div>
+                          <div style={{ fontSize: 14, fontWeight: 900, color: '#1E293B' }}>{co.name}</div>
+                          <div style={{ fontSize: 11, fontWeight: 600, color: '#9CA3AF' }}>
+                            {entry.locations} location{entry.locations !== 1 ? 's' : ''}
+                          </div>
                         </div>
                       </div>
+                      {/* ROI pill — tappable for explanation */}
+                      <button
+                        onClick={e => { e.stopPropagation(); setExpandedROI(isExpanded ? null : id) }}
+                        style={{
+                          background: gainBg, borderRadius: 10,
+                          padding: '4px 10px', textAlign: 'right',
+                          border: 'none', cursor: 'pointer', fontFamily: 'inherit',
+                        }}
+                      >
+                        <div style={{ fontSize: 14, fontWeight: 900, color: gainColor }}>
+                          {roi >= 0 ? '+' : ''}{roi}% ROI
+                        </div>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: gainColor, opacity: 0.8 }}>
+                          {totalGain >= 0 ? '+' : ''}{formatMoney(totalGain)} total gain
+                        </div>
+                      </button>
                     </div>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <div style={{ flex: 1, textAlign: 'center', padding: '6px', background: '#fff', borderRadius: 8, border: '1px solid #E2E8F0' }}>
+                        <div style={{ fontSize: 10, color: '#9CA3AF', fontWeight: 700 }}>Invested</div>
+                        <div style={{ fontSize: 13, fontWeight: 800, color: '#374151' }}>{formatMoney(totalInvested)}</div>
+                      </div>
+                      <div style={{ flex: 1, textAlign: 'center', padding: '6px', background: '#fff', borderRadius: 8, border: '1px solid #E2E8F0' }}>
+                        <div style={{ fontSize: 10, color: '#9CA3AF', fontWeight: 700 }}>Value Now</div>
+                        <div style={{ fontSize: 13, fontWeight: 800, color: '#1D4ED8' }}>{formatMoney(currentValue)}</div>
+                      </div>
+                      <div style={{ flex: 1, textAlign: 'center', padding: '6px', background: '#fff', borderRadius: 8, border: '1px solid #E2E8F0' }}>
+                        <div style={{ fontSize: 10, color: '#9CA3AF', fontWeight: 700 }}>Profits</div>
+                        <div style={{ fontSize: 13, fontWeight: 800, color: '#16A34A' }}>+{formatMoney(profitsCollected)}</div>
+                      </div>
+                    </div>
+                  </div>
+                  {/* Expandable ROI explanation */}
+                  {isExpanded && (
                     <div style={{
-                      background: gainBg, borderRadius: 10,
-                      padding: '4px 10px', textAlign: 'right',
+                      background: gainBg,
+                      borderTop: `1px solid ${gainColor}30`,
+                      padding: '10px 12px',
                     }}>
-                      <div style={{ fontSize: 14, fontWeight: 900, color: gainColor }}>
-                        {roi >= 0 ? '+' : ''}{roi}% ROI
+                      <div style={{ fontSize: 12, fontWeight: 800, color: gainColor, marginBottom: 4 }}>
+                        How ROI is calculated
                       </div>
-                      <div style={{ fontSize: 11, fontWeight: 700, color: gainColor, opacity: 0.8 }}>
-                        {totalGain >= 0 ? '+' : ''}{formatMoney(totalGain)} total
+                      <div style={{ fontSize: 12, fontWeight: 600, color: '#374151', lineHeight: 1.55 }}>
+                        <strong>ROI = (Value Change + Profits Collected) ÷ Total Invested</strong>
+                        <br />
+                        Value change: {valueChange >= 0 ? '+' : ''}{formatMoney(valueChange)} · Profits: +{formatMoney(profitsCollected)}
+                        <br />
+                        Total gain {totalGain >= 0 ? '+' : ''}{formatMoney(totalGain)} on {formatMoney(totalInvested)} invested = <strong>{roi >= 0 ? '+' : ''}{roi}%</strong>
                       </div>
                     </div>
-                  </div>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <div style={{ flex: 1, textAlign: 'center', padding: '6px', background: '#fff', borderRadius: 8, border: '1px solid #E2E8F0' }}>
-                      <div style={{ fontSize: 10, color: '#9CA3AF', fontWeight: 700 }}>Invested</div>
-                      <div style={{ fontSize: 13, fontWeight: 800, color: '#374151' }}>{formatMoney(totalInvested)}</div>
-                    </div>
-                    <div style={{ flex: 1, textAlign: 'center', padding: '6px', background: '#fff', borderRadius: 8, border: '1px solid #E2E8F0' }}>
-                      <div style={{ fontSize: 10, color: '#9CA3AF', fontWeight: 700 }}>Value Now</div>
-                      <div style={{ fontSize: 13, fontWeight: 800, color: '#1D4ED8' }}>{formatMoney(currentValue)}</div>
-                    </div>
-                    <div style={{ flex: 1, textAlign: 'center', padding: '6px', background: '#fff', borderRadius: 8, border: '1px solid #E2E8F0' }}>
-                      <div style={{ fontSize: 10, color: '#9CA3AF', fontWeight: 700 }}>Profits</div>
-                      <div style={{ fontSize: 13, fontWeight: 800, color: '#16A34A' }}>+{formatMoney(profitsCollected)}</div>
-                    </div>
-                  </div>
+                  )}
                 </div>
               )
             })}
@@ -320,11 +348,11 @@ export default function MarketTab({
             </div>
             <div>
               <div style={{ fontSize: 20, fontWeight: 900, color: econColor }}>{getEconomyLabel(economy.state)}</div>
-              <div style={{ fontSize: 12, fontWeight: 600, color: '#6B7280', marginTop: 2 }}>
-                {economy.turnsLeft} turn{economy.turnsLeft !== 1 ? 's' : ''} remaining
-                {economy.preSignal === 'preSlowdown' ? ' · ⚠️ Slowdown ahead' : ''}
-                {economy.preSignal === 'preBoom' ? ' · 🌱 Recovery ahead' : ''}
-              </div>
+              {(economy.preSignal === 'preSlowdown' || economy.preSignal === 'preBoom') && (
+                <div style={{ fontSize: 12, fontWeight: 600, color: '#6B7280', marginTop: 2 }}>
+                  {economy.preSignal === 'preSlowdown' ? '⚠️ Slowdown signal ahead' : '🌱 Recovery signal ahead'}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -351,11 +379,9 @@ export default function MarketTab({
                     {sector.name}
                     {!isUnlocked && <span style={{ fontSize: 11, color: '#9CA3AF', marginLeft: 6 }}>🔒 locked</span>}
                   </div>
-                  {isUnlocked && cycle && (
+                  {isUnlocked && cycle && (cycle.preSignal === 'preSlowdown' || cycle.preSignal === 'preBoom') && (
                     <div style={{ fontSize: 11, fontWeight: 600, color: '#9CA3AF', marginTop: 1 }}>
-                      {cycle.turnsLeft} turn{cycle.turnsLeft !== 1 ? 's' : ''} remaining
-                      {cycle.preSignal === 'preSlowdown' ? ' · ⚠️ slowing' : ''}
-                      {cycle.preSignal === 'preBoom' ? ' · 🌱 recovering' : ''}
+                      {cycle.preSignal === 'preSlowdown' ? '⚠️ Slowing' : '🌱 Recovering'}
                     </div>
                   )}
                 </div>
@@ -371,6 +397,62 @@ export default function MarketTab({
             )
           })}
         </div>
+
+        {/* Trophy Case */}
+        {(() => {
+          const earned = achievements || []
+          const unlocked = ACHIEVEMENTS_CATALOG.filter(a => earned.includes(a.id))
+          const locked = ACHIEVEMENTS_CATALOG.filter(a => !earned.includes(a.id))
+          return (
+            <div style={{ background: '#fff', borderRadius: 14, padding: '14px', marginBottom: 12, boxShadow: '0 1px 4px rgba(0,0,0,0.05)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <div style={{ fontSize: 12, fontWeight: 800, color: '#374151', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                  🏆 Trophy Case
+                </div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: '#9CA3AF' }}>
+                  {unlocked.length}/{ACHIEVEMENTS_CATALOG.length}
+                </div>
+              </div>
+              {/* Progress bar */}
+              <div style={{ height: 5, background: '#E5E7EB', borderRadius: 3, overflow: 'hidden', marginBottom: 12 }}>
+                <div style={{
+                  height: '100%', borderRadius: 3,
+                  width: `${Math.round((unlocked.length / ACHIEVEMENTS_CATALOG.length) * 100)}%`,
+                  background: 'linear-gradient(90deg, #FCD34D, #F59E0B)',
+                  transition: 'width 0.4s ease',
+                }} />
+              </div>
+              {/* Unlocked trophies */}
+              {unlocked.length > 0 ? (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  {unlocked.map(a => (
+                    <div key={a.id} style={{
+                      background: 'linear-gradient(135deg, #FFFBEB, #FEF3C7)',
+                      border: '1.5px solid #FCD34D',
+                      borderRadius: 10, padding: '6px 10px',
+                      display: 'flex', alignItems: 'center', gap: 6,
+                    }}>
+                      <span style={{ fontSize: 18 }}>{a.label.split(' ')[0]}</span>
+                      <span style={{ fontSize: 11, fontWeight: 800, color: '#78350F' }}>
+                        {a.label.split(' ').slice(1).join(' ')}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ fontSize: 13, color: '#9CA3AF', fontWeight: 600, textAlign: 'center', padding: '8px 0' }}>
+                  Play more turns to earn trophies!
+                </div>
+              )}
+              {/* Locked hint row */}
+              {locked.length > 0 && (
+                <div style={{ marginTop: 8, fontSize: 11, fontWeight: 600, color: '#CBD5E1' }}>
+                  🔒 {locked.length} more to unlock — keep building!
+                </div>
+              )}
+            </div>
+          )
+        })()}
 
         {/* Interest Rate */}
         <div style={{ background: '#fff', borderRadius: 14, padding: '14px', boxShadow: '0 1px 4px rgba(0,0,0,0.05)' }}>

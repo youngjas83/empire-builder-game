@@ -1,117 +1,81 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { SECTORS, LEVELS, COMPANIES, BADGES } from '../data/companies.js'
-import { formatMoney, calcNetWorth, calcProfitPerTurn, getEconomyLabel, getEconomyColor, getSectorStateColor } from '../game/engine.js'
+import { formatMoney, calcNetWorth, calcProfitPerTurn, getEconomyLabel, getEconomyColor, getSectorStateColor, calcLocationsMultiplier } from '../game/engine.js'
 import Chip from './Chip.jsx'
 
-// ─── Chip Pick Algorithm ───────────────────────────────────────────────────────
-
-function getChipPick(portfolio, companyStates, cash, economy, sectorCycles, level) {
-  const candidates = COMPANIES.filter(co => {
-    if (portfolio[co.id]) return false
-    if (co.badge === 'fadingOut') return false
-    const sector = SECTORS[co.sector]
-    if (!sector || level < sector.unlockLevel) return false
-    const cs = companyStates[co.id] || { profit: co.baseProfit, multiplier: co.baseMultiplier }
-    return Math.round(cs.profit * cs.multiplier) <= cash
-  })
-  if (candidates.length === 0) return null
-
-  const scored = candidates.map(co => {
-    const cs = companyStates[co.id] || { profit: co.baseProfit, multiplier: co.baseMultiplier }
-    const value = Math.round(cs.profit * cs.multiplier)
-    const cycle = sectorCycles[co.sector]
-    let score = 0
-
-    if (economy.state === 'slowdown' || economy.preSignal === 'preSlowdown') {
-      if (co.badge === 'safeBet')      score += 30
-      else if (co.badge === 'steadyGrower') score += 20
-      else if (co.badge === 'highRisk' || co.badge === 'wildCard') score -= 20
-    } else if (economy.state === 'booming') {
-      if (co.badge === 'highRisk')     score += 20
-      if (co.badge === 'wildCard')     score += 15
-      if (co.badge === 'steadyGrower') score += 10
-    } else {
-      if (co.badge === 'safeBet')      score += 10
-      if (co.badge === 'steadyGrower') score += 15
-      if (co.badge === 'balanced')     score += 8
-    }
-
-    if (cycle?.state === 'boom')               score += 25
-    if (cycle?.state === 'downturn')           score -= 30
-    if (cycle?.preSignal === 'preSlowdown')    score -= 15
-    if (cycle?.preSignal === 'preBoom')        score += 10
-
-    return { co, cs, value, score }
-  })
-
-  scored.sort((a, b) => b.score - a.score)
-  const best = scored[0]
-  if (!best) return null
-
-  const cycle = sectorCycles[best.co.sector]
-  const badge = BADGES[best.co.badge]?.label || ''
-  const sectorName = SECTORS[best.co.sector]?.name || ''
-  const payback = best.cs.profit > 0 ? Math.ceil(best.value / best.cs.profit) : null
-
-  let reason
-  if (economy.state === 'slowdown' || economy.preSignal === 'preSlowdown') {
-    reason = `Economy is struggling — ${best.co.name} is a ${badge} that holds up better than most right now.`
-  } else if (cycle?.state === 'boom') {
-    reason = `${sectorName} is booming! ${best.co.name} is about to get a big value boost this turn.`
-  } else if (economy.state === 'booming' && best.score >= 20) {
-    reason = `Economy is hot! ${best.co.name} (${badge}) has serious upside potential in a boom.`
-  } else if (payback !== null) {
-    reason = `${best.co.name} earns ${formatMoney(Math.round(best.cs.profit))}/turn — pays back in ~${payback} turns!`
-  } else {
-    reason = `${best.co.name} is a solid ${badge} pick right now.`
-  }
-
-  return { co: best.co, value: best.value, reason }
-}
 
 // ─── Empire Report Card ────────────────────────────────────────────────────────
+
+const START_CAPITAL = 10000000
 
 function calcReportCard(state, netWorth, profitPerTurn) {
   const { portfolio, companyStates, economy, sectorCycles } = state
   const ownedIds = Object.keys(portfolio)
   if (ownedIds.length === 0) return null
 
-  // 1. Growth: how much has NW grown from $10M start? (0-25)
-  const growthRatio = netWorth / 10000000
-  const growthScore = Math.min(25, Math.max(0, Math.round((growthRatio - 1) * 4)))
+  // 1. Growth: MOIC vs $10M starting capital (0–25)
+  const moic = netWorth / START_CAPITAL
+  const growthScore = moic >= 25 ? 25 : moic >= 10 ? 21 : moic >= 5 ? 17 : moic >= 2 ? 12 : moic >= 1.5 ? 8 : Math.max(0, Math.round((moic - 1) * 14))
 
-  // 2. Diversification: sectors covered (0-25)
+  // 2. Diversification: sectors covered (0–25)
   const sectors = new Set(ownedIds.map(id => COMPANIES.find(c => c.id === id)?.sector).filter(Boolean))
-  const diversScore = Math.min(25, sectors.size * 7)
+  const diversScore = sectors.size >= 4 ? 25 : sectors.size === 3 ? 20 : sectors.size === 2 ? 13 : 5
 
-  // 3. Profit efficiency: profit/turn as % of net worth (0-25)
+  // 3. Profit Rate: profit/turn as % of empire value (0–25)
   const effPct = netWorth > 0 ? (profitPerTurn / netWorth) * 100 : 0
-  const effScore = Math.min(25, Math.round(effPct * 6))
+  const effScore = effPct >= 8 ? 25 : effPct >= 6 ? 21 : effPct >= 4 ? 17 : effPct >= 2 ? 10 : Math.max(0, Math.round(effPct * 3))
 
-  // 4. Risk balance: avoid heavy downturn exposure + have some safe names (0-25)
+  // 4. Risk Balance (0–25)
   const inDownturn = ownedIds.filter(id => {
     const co = COMPANIES.find(c => c.id === id)
     return co && sectorCycles[co.sector]?.state === 'downturn'
   }).length
-  const safeCos = ownedIds.filter(id => {
+  const hasAnchor = ownedIds.some(id => {
     const co = COMPANIES.find(c => c.id === id)
-    return co && co.profSens <= 0.4
-  }).length
-  let riskScore = 15
-  if (safeCos > 0) riskScore += 5
+    return co && (co.badge === 'safeBet' || co.badge === 'steadyGrower')
+  })
+  const hasHighRisk = ownedIds.some(id => {
+    const co = COMPANIES.find(c => c.id === id)
+    return co && (co.badge === 'highRisk' || co.badge === 'wildCard')
+  })
+  let riskScore = 10
+  if (hasAnchor)        riskScore += 5
   if (sectors.size >= 2) riskScore += 5
-  if (inDownturn > ownedIds.length / 2) riskScore -= 10
-  if (economy.state === 'slowdown') {
-    const risky = ownedIds.filter(id => { const co = COMPANIES.find(c => c.id === id); return co && co.profSens > 1.0 }).length
-    if (risky > safeCos) riskScore -= 5
-  }
+  if (inDownturn === 0)  riskScore += 5
+  if (economy.state === 'slowdown' && hasHighRisk && !hasAnchor) riskScore -= 5
   riskScore = Math.max(0, Math.min(25, riskScore))
 
   const total = growthScore + diversScore + effScore + riskScore
   const grade = total >= 80 ? 'A' : total >= 60 ? 'B' : total >= 40 ? 'C' : total >= 20 ? 'D' : 'F'
   const gradeLabels = { A: 'Empire Mogul 🌟', B: 'Smart Investor', C: 'Getting There', D: 'Needs Work', F: 'Just Starting' }
   const gradeColors = { A: '#16A34A', B: '#1D4ED8', C: '#D97706', D: '#DC2626', F: '#9CA3AF' }
-  const gradeBg = { A: 'linear-gradient(135deg,#F0FDF4,#DCFCE7)', B: 'linear-gradient(135deg,#EFF6FF,#DBEAFE)', C: 'linear-gradient(135deg,#FFFBEB,#FEF3C7)', D: 'linear-gradient(135deg,#FEF2F2,#FEE2E2)', F: '#F8FAFC' }
+  const gradeBg    = { A: 'linear-gradient(135deg,#F0FDF4,#DCFCE7)', B: 'linear-gradient(135deg,#EFF6FF,#DBEAFE)', C: 'linear-gradient(135deg,#FFFBEB,#FEF3C7)', D: 'linear-gradient(135deg,#FEF2F2,#FEE2E2)', F: '#F8FAFC' }
+
+  // Chip explanations per category
+  const moicStr = moic.toFixed(1)
+  const growthChip = growthScore >= 21
+    ? `Your empire is ${moicStr}× your starting capital — that's elite-level compounding!`
+    : growthScore >= 12
+    ? `You've grown to ${moicStr}× your starting $10M. Keep reinvesting profits into more companies to accelerate.`
+    : `Your empire is only ${moicStr}× your starting capital. Buy companies in booming sectors and open locations to grow faster.`
+
+  const diversChip = diversScore >= 20
+    ? `You own companies in ${sectors.size} sectors — solid protection against any single sector downturn.`
+    : sectors.size === 1
+    ? `All your companies are in one sector. If that sector hits a downturn, every company gets hurt at once. Diversify!`
+    : `${sectors.size} sectors covered. Add one more sector to unlock better protection and a higher score.`
+
+  const effChip = effScore >= 17
+    ? `Your companies earn ${effPct.toFixed(1)}% of your empire value every turn — that's a strong income engine.`
+    : `Your companies earn ${effPct.toFixed(1)}% of your empire value per turn. Aim for 4%+ by opening more locations on your best earners.`
+
+  const riskChip = !hasAnchor
+    ? `You have no anchor companies (Safe Bet or Steady Grower). In a slowdown, your entire portfolio bleeds. Add at least one defensive name.`
+    : inDownturn > 0
+    ? `${inDownturn} of your companies ${inDownturn === 1 ? 'is' : 'are'} in a sector downturn right now — their value shrinks every turn. Consider selling or diversifying.`
+    : riskScore >= 20
+    ? `Great balance! You have anchor companies, cross-sector diversification, and no downturn exposure.`
+    : `You have anchor companies but could spread into more sectors for better protection.`
 
   return {
     grade, total,
@@ -119,10 +83,30 @@ function calcReportCard(state, netWorth, profitPerTurn) {
     color: gradeColors[grade],
     bg: gradeBg[grade],
     breakdown: [
-      { label: 'Growth',        score: growthScore, max: 25, tip: growthScore < 10 ? 'Grow your net worth faster' : 'Good growth!' },
-      { label: 'Diversification', score: diversScore, max: 25, tip: sectors.size < 2 ? 'Spread across sectors' : 'Well diversified!' },
-      { label: 'Profit Rate',   score: effScore,    max: 25, tip: effPct < 2 ? 'Earn more per turn' : 'Strong income!' },
-      { label: 'Risk Balance',  score: riskScore,   max: 25, tip: riskScore < 15 ? 'Reduce downturn exposure' : 'Balanced portfolio!' },
+      {
+        id: 'growth', label: 'Growth', score: growthScore, max: 25,
+        tip: growthScore >= 17 ? '🟢 Strong' : growthScore >= 8 ? '🟡 Decent' : '🔴 Weak',
+        formula: 'How many times you\'ve multiplied your starting $10M.',
+        chipText: growthChip,
+      },
+      {
+        id: 'divers', label: 'Diversification', score: diversScore, max: 25,
+        tip: diversScore >= 20 ? '🟢 Strong' : diversScore >= 13 ? '🟡 Decent' : '🔴 Weak',
+        formula: 'Number of different sectors you own companies in.',
+        chipText: diversChip,
+      },
+      {
+        id: 'profit', label: 'Profit Rate', score: effScore, max: 25,
+        tip: effScore >= 17 ? '🟢 Strong' : effScore >= 10 ? '🟡 Decent' : '🔴 Weak',
+        formula: 'Profit per turn ÷ empire value. A higher % means your empire earns more per dollar.',
+        chipText: effChip,
+      },
+      {
+        id: 'risk', label: 'Risk Balance', score: riskScore, max: 25,
+        tip: riskScore >= 20 ? '🟢 Strong' : riskScore >= 15 ? '🟡 Decent' : '🔴 Weak',
+        formula: 'Checks for anchor companies, cross-sector diversification, and no active downturn exposure.',
+        chipText: riskChip,
+      },
     ],
   }
 }
@@ -143,7 +127,9 @@ export default function EmpireTab({
   onEndTurn,
   onEditName,
   onEconomyPillTap,
+  onDismissLocationTutorial,
 }) {
+  const [expandedCard, setExpandedCard] = useState(null)
   const {
     empireName, turn, cash, portfolio, companyStates,
     economy, sectorCycles, level, turnActions,
@@ -160,9 +146,6 @@ export default function EmpireTab({
     : 1
 
   const interestRate = state.difficulty === 'easy' ? 0.03 : state.difficulty === 'hard' ? 0.01 : 0.02
-  const chipPick = companiesOwned > 0
-    ? getChipPick(portfolio, companyStates, cash, economy, state.sectorCycles, state.level)
-    : null
   const reportCard = calcReportCard(state, netWorth, profitPerTurn)
   const projectedEarnings = profitPerTurn + Math.round(cash * interestRate)
 
@@ -229,7 +212,7 @@ export default function EmpireTab({
         {/* Net Worth */}
         <div style={{ position: 'relative' }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.55)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 3 }}>
-            Net Worth
+            Empire Value
           </div>
           <div style={{
             fontSize: 38, fontWeight: 900, color: '#FCD34D',
@@ -375,30 +358,53 @@ export default function EmpireTab({
           </div>
         )}
 
-        {/* Chip's Pick — shown when you own companies and have an affordable option */}
-        {chipPick && (
-          <div style={{
-            background: 'linear-gradient(135deg, #1E293B, #374151)',
-            borderRadius: 16, padding: '13px 14px',
-            marginBottom: 10,
-            display: 'flex', alignItems: 'flex-start', gap: 12,
-          }}>
-            <div style={{ flexShrink: 0, marginTop: -2 }}>
-              <Chip mood="excited" size={44} />
+        {/* Location tutorial — after turn 1, if affordable location exists */}
+        {companiesOwned > 0 && state.turn >= 2 && !state.sawLocationTutorial && (() => {
+          let tutCo = null, tutCost = 0, tutExtraProfit = 0
+          Object.entries(portfolio).forEach(([id, entry]) => {
+            if (entry.locations >= 5) return
+            const cs = companyStates[id]
+            if (!cs) return
+            const cost = Math.round(cs.profit * cs.multiplier * 0.15)
+            if (cost <= cash && (!tutCo || cost < tutCost)) {
+              tutCo = COMPANIES.find(c => c.id === id)
+              tutCost = cost
+              tutExtraProfit = Math.round(cs.profit * 0.30)
+            }
+          })
+          if (!tutCo) return null
+          return (
+            <div style={{
+              background: 'linear-gradient(135deg, #F0FDF4, #ECFDF5)',
+              border: '2px solid #86EFAC',
+              borderRadius: 16, padding: '13px 14px',
+              marginBottom: 10,
+              display: 'flex', alignItems: 'flex-start', gap: 12,
+            }}>
+              <div style={{ flexShrink: 0 }}>
+                <Chip mood="excited" size={44} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 11, fontWeight: 900, color: '#15803D', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 3 }}>
+                  🏗️ Tip: Expand!
+                </div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: '#1E293B', lineHeight: 1.4 }}>
+                  {tutCo.emoji} {tutCo.name} can open a second location for {formatMoney(tutCost)} — adds +{formatMoney(tutExtraProfit)}/turn profit permanently!
+                </div>
+                <div style={{ fontSize: 12, color: '#16A34A', fontWeight: 600, marginTop: 3 }}>
+                  Tap the company → Investment Details to expand.
+                </div>
+              </div>
+              <button
+                onClick={onDismissLocationTutorial}
+                style={{
+                  background: 'none', border: 'none', color: '#9CA3AF',
+                  fontSize: 20, cursor: 'pointer', padding: 0, flexShrink: 0, lineHeight: 1,
+                }}
+              >×</button>
             </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 11, fontWeight: 900, color: '#FCD34D', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 3 }}>
-                🤖 Chip's Pick
-              </div>
-              <div style={{ fontSize: 15, fontWeight: 900, color: '#fff', marginBottom: 3 }}>
-                {chipPick.co.emoji} {chipPick.co.name} · {formatMoney(chipPick.value)}
-              </div>
-              <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.75)', lineHeight: 1.4 }}>
-                {chipPick.reason}
-              </div>
-            </div>
-          </div>
-        )}
+          )
+        })()}
 
         {/* Sector tiles */}
         {Object.values(SECTORS).map(sector => {
@@ -535,7 +541,7 @@ export default function EmpireTab({
             marginTop: 4,
           }}>
             {/* Header row */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 14 }}>
               <div style={{
                 width: 58, height: 58, borderRadius: 16, flexShrink: 0,
                 background: reportCard.color,
@@ -552,31 +558,71 @@ export default function EmpireTab({
                   {reportCard.label}
                 </div>
                 <div style={{ fontSize: 12, fontWeight: 700, color: '#6B7280', marginTop: 1 }}>
-                  Score: {reportCard.total} / 100
+                  Score: {reportCard.total} / 100 · tap a category to learn more
                 </div>
               </div>
             </div>
 
-            {/* Score breakdown */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
-              {reportCard.breakdown.map(row => (
-                <div key={row.label}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
-                    <span style={{ fontSize: 12, fontWeight: 700, color: '#374151' }}>{row.label}</span>
-                    <span style={{ fontSize: 12, fontWeight: 800, color: reportCard.color }}>
-                      {row.score}/{row.max} · {row.tip}
-                    </span>
+            {/* Score breakdown — each row is tappable */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {reportCard.breakdown.map(row => {
+                const isOpen = expandedCard === row.id
+                return (
+                  <div key={row.id}>
+                    <button
+                      onClick={() => setExpandedCard(isOpen ? null : row.id)}
+                      style={{
+                        width: '100%', background: 'rgba(255,255,255,0.55)',
+                        border: `1px solid ${isOpen ? reportCard.color + '60' : 'rgba(0,0,0,0.07)'}`,
+                        borderRadius: 12, padding: '10px 12px',
+                        cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left',
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                        <span style={{ fontSize: 13, fontWeight: 800, color: '#1E293B' }}>{row.label}</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span style={{ fontSize: 12, fontWeight: 800, color: reportCard.color }}>{row.tip}</span>
+                          <span style={{ fontSize: 12, fontWeight: 900, color: '#6B7280', opacity: 0.6 }}>{isOpen ? '▲' : '▼'}</span>
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div style={{ flex: 1, height: 6, background: 'rgba(0,0,0,0.10)', borderRadius: 3, overflow: 'hidden' }}>
+                          <div style={{
+                            height: '100%', borderRadius: 3,
+                            width: `${Math.round((row.score / row.max) * 100)}%`,
+                            background: reportCard.color,
+                            transition: 'width 0.5s ease',
+                          }} />
+                        </div>
+                        <span style={{ fontSize: 12, fontWeight: 900, color: reportCard.color, flexShrink: 0 }}>
+                          {row.score}/{row.max}
+                        </span>
+                      </div>
+                    </button>
+                    {isOpen && (
+                      <div style={{
+                        background: 'rgba(255,255,255,0.75)',
+                        borderRadius: '0 0 12px 12px',
+                        padding: '12px 14px',
+                        borderLeft: `3px solid ${reportCard.color}50`,
+                        marginTop: -2,
+                      }}>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: '#9CA3AF', marginBottom: 6, fontStyle: 'italic' }}>
+                          📐 {row.formula}
+                        </div>
+                        <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                          <div style={{ flexShrink: 0 }}>
+                            <Chip mood={row.score >= 17 ? 'happy' : row.score >= 8 ? 'thinking' : 'worried'} size={40} />
+                          </div>
+                          <p style={{ fontSize: 13, fontWeight: 600, color: '#1E293B', lineHeight: 1.55, margin: 0 }}>
+                            {row.chipText}
+                          </p>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  <div style={{ height: 5, background: 'rgba(0,0,0,0.08)', borderRadius: 3, overflow: 'hidden' }}>
-                    <div style={{
-                      height: '100%', borderRadius: 3,
-                      width: `${Math.round((row.score / row.max) * 100)}%`,
-                      background: reportCard.color,
-                      transition: 'width 0.5s ease',
-                    }} />
-                  </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </div>
         )}

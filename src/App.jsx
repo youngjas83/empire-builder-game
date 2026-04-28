@@ -492,6 +492,12 @@ export default function App() {
     setAppState(createSetupState)
   }
 
+  // ── Location tutorial dismiss ─────────────────────────────────────────────────
+
+  function handleDismissLocationTutorial() {
+    setAppState(s => ({ ...s, sawLocationTutorial: true }))
+  }
+
   // ── Onboarding popup ──────────────────────────────────────────────────────────
 
   function handleDismissOnboarding() {
@@ -622,6 +628,7 @@ export default function App() {
                 onEndTurn={handleEndTurn}
                 onEditName={handleEditName}
                 onEconomyPillTap={handleEconomyPillTap}
+                onDismissLocationTutorial={handleDismissLocationTutorial}
               />
             )}
             {activeTab === 'news' && (
@@ -645,6 +652,7 @@ export default function App() {
                 level={level}
                 portfolio={portfolio}
                 companyStates={companyStates}
+                achievements={appState.achievements}
                 onSelectCompany={id => {
                   handleSelectCompany(id)
                   setAppState(s => ({ ...s, activeTab: 'empire' }))

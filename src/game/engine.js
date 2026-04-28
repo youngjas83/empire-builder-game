@@ -1,4 +1,4 @@
-import { COMPANIES, LEVELS } from '../data/companies.js'
+import { COMPANIES, LEVELS, SECTORS } from '../data/companies.js'
 import { generateNews } from '../data/news.js'
 
 // ─── Achievements Catalog (used by ChipTab trophy shelf) ─────────────────────
@@ -121,6 +121,7 @@ export function createInitialGameState(empireName, difficulty) {
     onboardingDismissed: false,
     chipGuideStep: 0,       // 0-3 = active guide, 4 = done
     companyNewsEffects: {}, // { [companyId]: ±0.06 } — applied next resolveEndTurn
+    sawLocationTutorial: false,
   }
 }
 
@@ -327,7 +328,8 @@ export function resolveEndTurn(state) {
   // 8% chance to start a new flash sale when none is active
   if (!newFlashSale && Math.random() < 0.08) {
     const eligible = COMPANIES.filter(co =>
-      !updatedPortfolio[co.id] && co.badge !== 'fadingOut'
+      !updatedPortfolio[co.id] && co.badge !== 'fadingOut' &&
+      (SECTORS[co.sector]?.unlockLevel ?? 99) <= newLevel
     )
     if (eligible.length > 0) {
       const target = eligible[Math.floor(Math.random() * eligible.length)]
