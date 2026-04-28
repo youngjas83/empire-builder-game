@@ -17,34 +17,34 @@ export default function SmartTradeToast({ trade, onDone }) {
   const multiple = trade.totalInvested > 0
     ? (trade.proceeds / trade.totalInvested).toFixed(1)
     : '1.0'
-  const profit = trade.proceeds - trade.totalInvested
+  const gain = trade.proceeds - trade.totalInvested
 
   let mood, headline, detail, bg, border, color
-  if (profit > 0 && roi >= 200) {
+  if (gain > 0 && roi >= 200) {
     mood = 'excited'
-    headline = `🤑 INCREDIBLE trade!`
+    headline = `🤑 INCREDIBLE exit!`
     detail = `You turned ${formatMoney(trade.totalInvested)} into ${formatMoney(trade.proceeds)} — that's ${multiple}× your money! That's pro-level investing.`
     bg = 'linear-gradient(135deg, #F0FDF4, #DCFCE7)'
     border = '#86EFAC'
     color = '#15803D'
-  } else if (profit > 0 && roi >= 75) {
+  } else if (gain > 0 && roi >= 75) {
     mood = 'excited'
-    headline = `🧠 Smart move!`
-    detail = `You made ${formatMoney(profit)} profit on that sale — ${roi}% return. Solid investing!`
+    headline = `🧠 Smart exit!`
+    detail = `Investment gain of ${formatMoney(gain)} on that sale — ${roi}% return. Solid investing!`
     bg = 'linear-gradient(135deg, #F0FDF4, #DCFCE7)'
     border = '#86EFAC'
     color = '#15803D'
-  } else if (profit > 0) {
+  } else if (gain > 0) {
     mood = 'happy'
     headline = `👍 Nice sale!`
-    detail = `You came out ahead — ${formatMoney(profit)} profit. Every win counts!`
+    detail = `You came out ahead — ${formatMoney(gain)} investment gain. Every win counts!`
     bg = 'linear-gradient(135deg, #EFF6FF, #DBEAFE)'
     border = '#93C5FD'
     color = '#1D4ED8'
   } else {
     mood = 'worried'
     headline = `📉 Tough break.`
-    detail = `You lost ${formatMoney(Math.abs(profit))} on that one. Every great investor takes a loss sometimes — what matters is what you do next!`
+    detail = `Investment loss of ${formatMoney(Math.abs(gain))} on that one. Every great investor takes a loss sometimes — what matters is what you do next!`
     bg = 'linear-gradient(135deg, #FEF2F2, #FEE2E2)'
     border = '#FCA5A5'
     color = '#DC2626'
@@ -91,7 +91,7 @@ export default function SmartTradeToast({ trade, onDone }) {
         }}>
           <div style={{ fontSize: 22, fontWeight: 900, color, marginBottom: 4 }}>{headline}</div>
           <div style={{ fontSize: 24, fontWeight: 900, color, marginBottom: 8 }}>
-            {profit >= 0 ? '+' : ''}{formatMoney(profit)}
+            {gain >= 0 ? '+' : ''}{formatMoney(gain)}
           </div>
           <div style={{ fontSize: 12, fontWeight: 700, color, opacity: 0.8 }}>
             {formatMoney(trade.totalInvested)} invested → {formatMoney(trade.proceeds)} received

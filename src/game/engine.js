@@ -1,6 +1,28 @@
 import { COMPANIES, LEVELS } from '../data/companies.js'
 import { generateNews } from '../data/news.js'
 
+// ─── Achievements Catalog (used by ChipTab trophy shelf) ─────────────────────
+
+export const ACHIEVEMENTS_CATALOG = [
+  { id: 'first_buy',      label: '🏆 First Investment',       desc: 'Buy your very first company' },
+  { id: 'first_million',  label: '💰 First Million',           desc: 'Reach $1M empire value' },
+  { id: 'net_10m',        label: '💰 $10M Empire',             desc: 'Reach $10M empire value' },
+  { id: 'net_50m',        label: '🏦 $50M Empire',             desc: 'Reach $50M empire value' },
+  { id: 'net_100m',       label: '💎 $100M Empire',            desc: 'Reach $100M empire value' },
+  { id: 'net_500m',       label: '👑 $500M Empire',            desc: 'Reach $500M empire value' },
+  { id: 'five_companies', label: '🏙️ 5 Companies',             desc: 'Own 5 companies at once' },
+  { id: 'ten_companies',  label: '🏢 10 Companies',            desc: 'Own 10 companies at once' },
+  { id: 'first_location', label: '🏗️ First Branch',            desc: 'Open your first branch location' },
+  { id: 'max_locations',  label: '🌆 Full Expansion',          desc: 'Grow one company to 5 locations' },
+  { id: 'three_sectors',  label: '🌐 Diversified Investor',   desc: 'Own companies in 3+ sectors' },
+  { id: 'big_earner',     label: '💵 $1M Profit Turn',         desc: 'Earn $1M+ from companies in one turn' },
+  { id: 'survived_down',  label: '💪 Downturn Survivor',       desc: 'Survive a full sector downturn' },
+  { id: 'flash_hunter',   label: '⚡ Flash Sale Hunter',       desc: 'Buy a company during a flash sale' },
+  { id: 'streak_5',       label: '🔥 5-Turn Streak',           desc: 'Grow profits 5 turns in a row' },
+  { id: 'streak_10',      label: '🔥🔥 10-Turn Streak',        desc: 'Grow profits 10 turns in a row' },
+  { id: 'level_2',        label: '🎭 Entertainment Unlocked', desc: 'Reach Level 2' },
+]
+
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 export const ECONOMY_RATES = {
@@ -354,6 +376,17 @@ export function resolveEndTurn(state) {
     { id: 'level_2',        label: '🎭 Entertainment Unlocked!',    check: () => justLeveledUp === 2 },
     { id: 'net_100m',       label: '💎 $100M Empire!',              check: () => newNetWorth >= 100000000 && (state.netWorthHistory.slice(-1)[0] || 0) < 100000000 },
     { id: 'net_500m',       label: '👑 $500M Empire!',              check: () => newNetWorth >= 500000000 && (state.netWorthHistory.slice(-1)[0] || 0) < 500000000 },
+    // New achievements
+    { id: 'net_10m',        label: '💰 $10M Empire!',               check: () => newNetWorth >= 10000000 && (state.netWorthHistory.slice(-1)[0] || 0) < 10000000 },
+    { id: 'net_50m',        label: '🏦 $50M Empire!',               check: () => newNetWorth >= 50000000 && (state.netWorthHistory.slice(-1)[0] || 0) < 50000000 },
+    { id: 'big_earner',     label: '💵 $1M Profit Turn!',           check: () => totalProfit >= 1000000 && (state.lastTurnProfit || 0) < 1000000 },
+    { id: 'three_sectors',  label: '🌐 Diversified Investor!',      check: () => {
+        const ns = new Set(Object.keys(updatedPortfolio).map(id => COMPANIES.find(c => c.id === id)?.sector).filter(Boolean))
+        const os = new Set(Object.keys(state.portfolio).map(id => COMPANIES.find(c => c.id === id)?.sector).filter(Boolean))
+        return ns.size >= 3 && os.size < 3
+      }},
+    { id: 'max_locations',  label: '🌆 Full Expansion!',            check: () => Object.values(updatedPortfolio).some(e => e.locations >= 5) && Object.values(state.portfolio).every(e => e.locations < 5) },
+    { id: 'ten_companies',  label: '🏢 10 Companies!',              check: () => Object.keys(updatedPortfolio).length >= 10 && Object.keys(state.portfolio).length < 10 },
   ]
   for (const ach of ACHIEVEMENTS) {
     if (!earnedAchievements.includes(ach.id) && ach.check()) {

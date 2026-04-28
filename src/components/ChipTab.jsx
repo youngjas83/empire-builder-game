@@ -2,7 +2,7 @@ import React from 'react'
 import Chip from './Chip.jsx'
 import { QA_CATEGORIES, searchQA } from '../data/qa.js'
 import { COMPANIES } from '../data/companies.js'
-import { formatMoney, calcNetWorth, calcProfitPerTurn } from '../game/engine.js'
+import { formatMoney, calcNetWorth, calcProfitPerTurn, ACHIEVEMENTS_CATALOG } from '../game/engine.js'
 
 export default function ChipTab({ state, onSubTabChange, onSearchChange, onToggleQuestion }) {
   const { chipSubTab, chipSearch, expandedQuestion, portfolio, companyStates, cash, difficulty } = state
@@ -26,6 +26,7 @@ export default function ChipTab({ state, onSubTabChange, onSearchChange, onToggl
           {[
             { id: 'qa', label: 'Q&A Bank' },
             { id: 'empire', label: 'My Empire' },
+            { id: 'trophies', label: '🏆 Trophies' },
           ].map(tab => (
             <button
               key={tab.id}
@@ -56,6 +57,8 @@ export default function ChipTab({ state, onSubTabChange, onSearchChange, onToggl
             onSearchChange={onSearchChange}
             onToggleQuestion={onToggleQuestion}
           />
+        ) : chipSubTab === 'trophies' ? (
+          <Trophies earned={state.achievements || []} />
         ) : (
           <MyEmpire state={state} />
         )}
@@ -155,6 +158,103 @@ function QABank({ categories, search, expandedQuestion, onSearchChange, onToggle
           })}
         </div>
       ))}
+    </div>
+  )
+}
+
+function Trophies({ earned }) {
+  const unlockedCount = earned.length
+  const totalCount = ACHIEVEMENTS_CATALOG.length
+
+  return (
+    <div style={{ padding: '12px 14px' }}>
+      {/* Header */}
+      <div style={{
+        background: 'linear-gradient(135deg, #1E293B, #374151)',
+        borderRadius: 14, padding: '14px 16px',
+        marginBottom: 14,
+        display: 'flex', alignItems: 'center', gap: 14,
+      }}>
+        <div style={{ fontSize: 36 }}>🏆</div>
+        <div>
+          <div style={{ fontSize: 16, fontWeight: 900, color: '#FCD34D' }}>
+            {unlockedCount} / {totalCount} Trophies
+          </div>
+          <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.6)', marginTop: 2 }}>
+            {unlockedCount === totalCount
+              ? 'You collected them all! 🎉'
+              : `${totalCount - unlockedCount} still to unlock`}
+          </div>
+          {/* Progress bar */}
+          <div style={{ height: 6, background: 'rgba(255,255,255,0.15)', borderRadius: 3, marginTop: 8, width: 180 }}>
+            <div style={{
+              height: '100%', borderRadius: 3,
+              width: `${Math.round((unlockedCount / totalCount) * 100)}%`,
+              background: 'linear-gradient(90deg, #FCD34D, #F59E0B)',
+              transition: 'width 0.4s ease',
+            }} />
+          </div>
+        </div>
+      </div>
+
+      {/* Unlocked */}
+      {unlockedCount > 0 && (
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ fontSize: 12, fontWeight: 800, color: '#374151', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 8 }}>
+            Unlocked
+          </div>
+          {ACHIEVEMENTS_CATALOG.filter(a => earned.includes(a.id)).map(a => (
+            <div key={a.id} style={{
+              background: 'linear-gradient(135deg, #FFFBEB, #FEF3C7)',
+              border: '1.5px solid #FCD34D',
+              borderRadius: 12, padding: '11px 14px',
+              marginBottom: 8,
+              display: 'flex', alignItems: 'center', gap: 12,
+            }}>
+              <div style={{ fontSize: 26, flexShrink: 0 }}>{a.label.split(' ')[0]}</div>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 800, color: '#78350F' }}>
+                  {a.label.split(' ').slice(1).join(' ')}
+                </div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: '#A16207', marginTop: 1 }}>
+                  {a.desc}
+                </div>
+              </div>
+              <div style={{ marginLeft: 'auto', fontSize: 18 }}>✅</div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Locked */}
+      {unlockedCount < totalCount && (
+        <div>
+          <div style={{ fontSize: 12, fontWeight: 800, color: '#374151', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 8 }}>
+            Locked
+          </div>
+          {ACHIEVEMENTS_CATALOG.filter(a => !earned.includes(a.id)).map(a => (
+            <div key={a.id} style={{
+              background: '#F8FAFC',
+              border: '1.5px solid #E2E8F0',
+              borderRadius: 12, padding: '11px 14px',
+              marginBottom: 8,
+              display: 'flex', alignItems: 'center', gap: 12,
+              opacity: 0.6,
+            }}>
+              <div style={{ fontSize: 26, flexShrink: 0, filter: 'grayscale(1)' }}>{a.label.split(' ')[0]}</div>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 800, color: '#374151' }}>
+                  {a.label.split(' ').slice(1).join(' ')}
+                </div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: '#9CA3AF', marginTop: 1 }}>
+                  {a.desc}
+                </div>
+              </div>
+              <div style={{ marginLeft: 'auto', fontSize: 18 }}>🔒</div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

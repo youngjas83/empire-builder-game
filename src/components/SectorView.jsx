@@ -1,6 +1,6 @@
 import React from 'react'
 import { BADGES, COMPANIES, SECTORS } from '../data/companies.js'
-import { formatMoney, getSectorStateColor } from '../game/engine.js'
+import { formatMoney, getSectorStateColor, calcLocationsMultiplier } from '../game/engine.js'
 
 // Returns the full cycle badge label including preSignal suffix
 function getCycleBadgeLabel(cycle) {
@@ -34,7 +34,16 @@ export default function SectorView({
   const sector = SECTORS[sectorId]
   if (!sector) return null
 
-  const companies = COMPANIES.filter(c => c.sector === sectorId)
+  // Sort companies: by badge tier first (safe → steady → balanced → risk → wildcard → fading),
+  // then by base value ascending within each tier (cheapest first)
+  const BADGE_ORDER = { safeBet: 0, steadyGrower: 1, balanced: 2, highRisk: 3, wildCard: 4, fadingOut: 5 }
+  const companies = COMPANIES
+    .filter(c => c.sector === sectorId)
+    .sort((a, b) => {
+      const tierDiff = (BADGE_ORDER[a.badge] ?? 99) - (BADGE_ORDER[b.badge] ?? 99)
+      if (tierDiff !== 0) return tierDiff
+      return (a.baseProfit * a.baseMultiplier) - (b.baseProfit * b.baseMultiplier)
+    })
   const sectorCycle = sectorCycles[sectorId]
   const sectorState = sectorCycle ? sectorCycle.state : 'normal'
   const stateColor = getSectorStateColor(sectorState)
@@ -104,7 +113,7 @@ export default function SectorView({
           </div>
         </div>
 
-        {/* Cash + Net Worth pills */}
+        {/* Cash + Empire Value pills */}
         {(cash !== undefined || netWorth !== undefined) && (
           <div style={{ display: 'flex', gap: 8 }}>
             {cash !== undefined && (
@@ -112,8 +121,10 @@ export default function SectorView({
                 background: 'rgba(255,255,255,0.18)', borderRadius: 20,
                 padding: '4px 12px', fontSize: 12, fontWeight: 800, color: '#fff',
                 border: '1px solid rgba(255,255,255,0.25)',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: 1.2,
               }}>
-                💵 {formatMoney(cash)}
+                <span style={{ fontSize: 9, fontWeight: 700, opacity: 0.75, letterSpacing: '0.07em', textTransform: 'uppercase' }}>Cash to spend</span>
+                <span>💵 {formatMoney(cash)}</span>
               </div>
             )}
             {netWorth !== undefined && (
@@ -121,8 +132,10 @@ export default function SectorView({
                 background: 'rgba(255,255,255,0.18)', borderRadius: 20,
                 padding: '4px 12px', fontSize: 12, fontWeight: 800, color: '#fff',
                 border: '1px solid rgba(255,255,255,0.25)',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: 1.2,
               }}>
-                📈 {formatMoney(netWorth)}
+                <span style={{ fontSize: 9, fontWeight: 700, opacity: 0.75, letterSpacing: '0.07em', textTransform: 'uppercase' }}>Empire Value</span>
+                <span>🏙️ {formatMoney(netWorth)}</span>
               </div>
             )}
           </div>
@@ -138,6 +151,15 @@ export default function SectorView({
           const isOnFlashSale = !owned && flashSale && flashSale.companyId === co.id
           const flashDiscount = isOnFlashSale ? flashSale.discount : 0
           const value = isOnFlashSale ? Math.round(baseValue * (1 - flashDiscount)) : baseValue
+
+          // Investment gain/loss vs purchase price (owned only)
+          let investGain = null
+          if (owned) {
+            const locMult = calcLocationsMultiplier(owned.locations)
+            const currentTotalValue = Math.round(cs.profit * cs.multiplier * locMult)
+            const totalInvested = (owned.purchasePrice || 0) + (owned.locationSpend || 0)
+            investGain = (currentTotalValue - totalInvested) + (owned.profitsCollected || 0)
+          }
 
           const badge = BADGES[co.badge]
           const pillStyle = BADGE_PILL_COLORS[co.badge] || { color: '#6B7280', bg: '#F1F5F9', border: '#E2E8F0' }
@@ -239,6 +261,18 @@ export default function SectorView({
                       border: `1px solid ${newsEffect > 0 ? '#86EFAC' : '#FCA5A5'}`,
                     }}>
                       {newsLabel}
+                    </span>
+                  )}
+                  {/* Investment gain/loss vs purchase */}
+                  {investGain !== null && (
+                    <span style={{
+                      fontSize: 11, fontWeight: 800,
+                      color: investGain >= 0 ? '#16A34A' : '#DC2626',
+                      background: investGain >= 0 ? '#F0FDF4' : '#FEF2F2',
+                      padding: '2px 8px', borderRadius: 6,
+                      border: `1px solid ${investGain >= 0 ? '#86EFAC' : '#FCA5A5'}`,
+                    }}>
+                      {investGain >= 0 ? '📈' : '📉'} {investGain >= 0 ? '+' : ''}{formatMoney(investGain)}
                     </span>
                   )}
                 </div>

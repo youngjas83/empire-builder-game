@@ -5,7 +5,7 @@ import { COMPANIES } from '../data/companies.js'
 export default function ActionDialog({ dialog, cash, onConfirm, onCancel }) {
   if (!dialog) return null
 
-  const { type, companyId, cost, proceeds, cashAfter, valueAdded } = dialog
+  const { type, companyId, cost, proceeds, cashAfter, valueAdded, tradeData } = dialog
   const co = COMPANIES.find(c => c.id === companyId)
   if (!co) return null
 
@@ -74,6 +74,40 @@ export default function ActionDialog({ dialog, cash, onConfirm, onCancel }) {
             <div style={{ fontSize: 20, fontWeight: 900, color: '#1E293B' }}>{co.name}</div>
           </div>
         </div>
+
+        {/* Investment Gain / Loss hero — sell only */}
+        {isSell && tradeData && (() => {
+          const gain = proceeds - (tradeData.totalInvested || tradeData.purchasePrice || 0)
+          const isGain = gain >= 0
+          return (
+            <div style={{
+              background: isGain
+                ? 'linear-gradient(135deg, #F0FDF4, #DCFCE7)'
+                : 'linear-gradient(135deg, #FEF2F2, #FEE2E2)',
+              border: `2px solid ${isGain ? '#86EFAC' : '#FCA5A5'}`,
+              borderRadius: 18, padding: '16px',
+              marginBottom: 14, textAlign: 'center',
+            }}>
+              <div style={{
+                fontSize: 11, fontWeight: 900,
+                color: isGain ? '#15803D' : '#DC2626',
+                textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 4,
+              }}>
+                {isGain ? '🎉 Investment Gain' : '📉 Investment Loss'}
+              </div>
+              <div style={{
+                fontSize: 36, fontWeight: 900,
+                color: isGain ? '#15803D' : '#DC2626',
+                letterSpacing: '-0.5px',
+              }}>
+                {isGain ? '+' : ''}{formatMoney(gain)}
+              </div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: isGain ? '#16A34A' : '#EF4444', opacity: 0.75, marginTop: 4 }}>
+                {formatMoney(tradeData.totalInvested || tradeData.purchasePrice || 0)} invested → {formatMoney(proceeds)} received
+              </div>
+            </div>
+          )
+        })()}
 
         {/* Stats */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>

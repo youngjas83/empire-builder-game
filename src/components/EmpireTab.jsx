@@ -1,7 +1,131 @@
 import React from 'react'
-import { SECTORS, LEVELS, COMPANIES } from '../data/companies.js'
+import { SECTORS, LEVELS, COMPANIES, BADGES } from '../data/companies.js'
 import { formatMoney, calcNetWorth, calcProfitPerTurn, getEconomyLabel, getEconomyColor, getSectorStateColor } from '../game/engine.js'
 import Chip from './Chip.jsx'
+
+// ─── Chip Pick Algorithm ───────────────────────────────────────────────────────
+
+function getChipPick(portfolio, companyStates, cash, economy, sectorCycles, level) {
+  const candidates = COMPANIES.filter(co => {
+    if (portfolio[co.id]) return false
+    if (co.badge === 'fadingOut') return false
+    const sector = SECTORS[co.sector]
+    if (!sector || level < sector.unlockLevel) return false
+    const cs = companyStates[co.id] || { profit: co.baseProfit, multiplier: co.baseMultiplier }
+    return Math.round(cs.profit * cs.multiplier) <= cash
+  })
+  if (candidates.length === 0) return null
+
+  const scored = candidates.map(co => {
+    const cs = companyStates[co.id] || { profit: co.baseProfit, multiplier: co.baseMultiplier }
+    const value = Math.round(cs.profit * cs.multiplier)
+    const cycle = sectorCycles[co.sector]
+    let score = 0
+
+    if (economy.state === 'slowdown' || economy.preSignal === 'preSlowdown') {
+      if (co.badge === 'safeBet')      score += 30
+      else if (co.badge === 'steadyGrower') score += 20
+      else if (co.badge === 'highRisk' || co.badge === 'wildCard') score -= 20
+    } else if (economy.state === 'booming') {
+      if (co.badge === 'highRisk')     score += 20
+      if (co.badge === 'wildCard')     score += 15
+      if (co.badge === 'steadyGrower') score += 10
+    } else {
+      if (co.badge === 'safeBet')      score += 10
+      if (co.badge === 'steadyGrower') score += 15
+      if (co.badge === 'balanced')     score += 8
+    }
+
+    if (cycle?.state === 'boom')               score += 25
+    if (cycle?.state === 'downturn')           score -= 30
+    if (cycle?.preSignal === 'preSlowdown')    score -= 15
+    if (cycle?.preSignal === 'preBoom')        score += 10
+
+    return { co, cs, value, score }
+  })
+
+  scored.sort((a, b) => b.score - a.score)
+  const best = scored[0]
+  if (!best) return null
+
+  const cycle = sectorCycles[best.co.sector]
+  const badge = BADGES[best.co.badge]?.label || ''
+  const sectorName = SECTORS[best.co.sector]?.name || ''
+  const payback = best.cs.profit > 0 ? Math.ceil(best.value / best.cs.profit) : null
+
+  let reason
+  if (economy.state === 'slowdown' || economy.preSignal === 'preSlowdown') {
+    reason = `Economy is struggling — ${best.co.name} is a ${badge} that holds up better than most right now.`
+  } else if (cycle?.state === 'boom') {
+    reason = `${sectorName} is booming! ${best.co.name} is about to get a big value boost this turn.`
+  } else if (economy.state === 'booming' && best.score >= 20) {
+    reason = `Economy is hot! ${best.co.name} (${badge}) has serious upside potential in a boom.`
+  } else if (payback !== null) {
+    reason = `${best.co.name} earns ${formatMoney(Math.round(best.cs.profit))}/turn — pays back in ~${payback} turns!`
+  } else {
+    reason = `${best.co.name} is a solid ${badge} pick right now.`
+  }
+
+  return { co: best.co, value: best.value, reason }
+}
+
+// ─── Empire Report Card ────────────────────────────────────────────────────────
+
+function calcReportCard(state, netWorth, profitPerTurn) {
+  const { portfolio, companyStates, economy, sectorCycles } = state
+  const ownedIds = Object.keys(portfolio)
+  if (ownedIds.length === 0) return null
+
+  // 1. Growth: how much has NW grown from $10M start? (0-25)
+  const growthRatio = netWorth / 10000000
+  const growthScore = Math.min(25, Math.max(0, Math.round((growthRatio - 1) * 4)))
+
+  // 2. Diversification: sectors covered (0-25)
+  const sectors = new Set(ownedIds.map(id => COMPANIES.find(c => c.id === id)?.sector).filter(Boolean))
+  const diversScore = Math.min(25, sectors.size * 7)
+
+  // 3. Profit efficiency: profit/turn as % of net worth (0-25)
+  const effPct = netWorth > 0 ? (profitPerTurn / netWorth) * 100 : 0
+  const effScore = Math.min(25, Math.round(effPct * 6))
+
+  // 4. Risk balance: avoid heavy downturn exposure + have some safe names (0-25)
+  const inDownturn = ownedIds.filter(id => {
+    const co = COMPANIES.find(c => c.id === id)
+    return co && sectorCycles[co.sector]?.state === 'downturn'
+  }).length
+  const safeCos = ownedIds.filter(id => {
+    const co = COMPANIES.find(c => c.id === id)
+    return co && co.profSens <= 0.4
+  }).length
+  let riskScore = 15
+  if (safeCos > 0) riskScore += 5
+  if (sectors.size >= 2) riskScore += 5
+  if (inDownturn > ownedIds.length / 2) riskScore -= 10
+  if (economy.state === 'slowdown') {
+    const risky = ownedIds.filter(id => { const co = COMPANIES.find(c => c.id === id); return co && co.profSens > 1.0 }).length
+    if (risky > safeCos) riskScore -= 5
+  }
+  riskScore = Math.max(0, Math.min(25, riskScore))
+
+  const total = growthScore + diversScore + effScore + riskScore
+  const grade = total >= 80 ? 'A' : total >= 60 ? 'B' : total >= 40 ? 'C' : total >= 20 ? 'D' : 'F'
+  const gradeLabels = { A: 'Empire Mogul 🌟', B: 'Smart Investor', C: 'Getting There', D: 'Needs Work', F: 'Just Starting' }
+  const gradeColors = { A: '#16A34A', B: '#1D4ED8', C: '#D97706', D: '#DC2626', F: '#9CA3AF' }
+  const gradeBg = { A: 'linear-gradient(135deg,#F0FDF4,#DCFCE7)', B: 'linear-gradient(135deg,#EFF6FF,#DBEAFE)', C: 'linear-gradient(135deg,#FFFBEB,#FEF3C7)', D: 'linear-gradient(135deg,#FEF2F2,#FEE2E2)', F: '#F8FAFC' }
+
+  return {
+    grade, total,
+    label: gradeLabels[grade],
+    color: gradeColors[grade],
+    bg: gradeBg[grade],
+    breakdown: [
+      { label: 'Growth',        score: growthScore, max: 25, tip: growthScore < 10 ? 'Grow your net worth faster' : 'Good growth!' },
+      { label: 'Diversification', score: diversScore, max: 25, tip: sectors.size < 2 ? 'Spread across sectors' : 'Well diversified!' },
+      { label: 'Profit Rate',   score: effScore,    max: 25, tip: effPct < 2 ? 'Earn more per turn' : 'Strong income!' },
+      { label: 'Risk Balance',  score: riskScore,   max: 25, tip: riskScore < 15 ? 'Reduce downturn exposure' : 'Balanced portfolio!' },
+    ],
+  }
+}
 
 function getSectorCycleBadgeLabel(cycle) {
   if (!cycle) return '🟡 Normal'
@@ -36,6 +160,10 @@ export default function EmpireTab({
     : 1
 
   const interestRate = state.difficulty === 'easy' ? 0.03 : state.difficulty === 'hard' ? 0.01 : 0.02
+  const chipPick = companiesOwned > 0
+    ? getChipPick(portfolio, companyStates, cash, economy, state.sectorCycles, state.level)
+    : null
+  const reportCard = calcReportCard(state, netWorth, profitPerTurn)
   const projectedEarnings = profitPerTurn + Math.round(cash * interestRate)
 
   const endTurnLabel = projectedEarnings > 0
@@ -247,6 +375,31 @@ export default function EmpireTab({
           </div>
         )}
 
+        {/* Chip's Pick — shown when you own companies and have an affordable option */}
+        {chipPick && (
+          <div style={{
+            background: 'linear-gradient(135deg, #1E293B, #374151)',
+            borderRadius: 16, padding: '13px 14px',
+            marginBottom: 10,
+            display: 'flex', alignItems: 'flex-start', gap: 12,
+          }}>
+            <div style={{ flexShrink: 0, marginTop: -2 }}>
+              <Chip mood="excited" size={44} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 11, fontWeight: 900, color: '#FCD34D', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 3 }}>
+                🤖 Chip's Pick
+              </div>
+              <div style={{ fontSize: 15, fontWeight: 900, color: '#fff', marginBottom: 3 }}>
+                {chipPick.co.emoji} {chipPick.co.name} · {formatMoney(chipPick.value)}
+              </div>
+              <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.75)', lineHeight: 1.4 }}>
+                {chipPick.reason}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Sector tiles */}
         {Object.values(SECTORS).map(sector => {
           const isUnlocked = level >= sector.unlockLevel
@@ -372,6 +525,61 @@ export default function EmpireTab({
             </button>
           )
         })}
+
+        {/* ── Empire Report Card ── */}
+        {reportCard && (
+          <div style={{
+            background: reportCard.bg,
+            border: `2px solid ${reportCard.color}40`,
+            borderRadius: 18, padding: '16px',
+            marginTop: 4,
+          }}>
+            {/* Header row */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 12 }}>
+              <div style={{
+                width: 58, height: 58, borderRadius: 16, flexShrink: 0,
+                background: reportCard.color,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: `0 4px 14px ${reportCard.color}50`,
+              }}>
+                <span style={{ fontSize: 30, fontWeight: 900, color: '#fff' }}>{reportCard.grade}</span>
+              </div>
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 900, color: reportCard.color, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                  Empire Report Card
+                </div>
+                <div style={{ fontSize: 18, fontWeight: 900, color: '#1E293B', marginTop: 1 }}>
+                  {reportCard.label}
+                </div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: '#6B7280', marginTop: 1 }}>
+                  Score: {reportCard.total} / 100
+                </div>
+              </div>
+            </div>
+
+            {/* Score breakdown */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+              {reportCard.breakdown.map(row => (
+                <div key={row.label}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: '#374151' }}>{row.label}</span>
+                    <span style={{ fontSize: 12, fontWeight: 800, color: reportCard.color }}>
+                      {row.score}/{row.max} · {row.tip}
+                    </span>
+                  </div>
+                  <div style={{ height: 5, background: 'rgba(0,0,0,0.08)', borderRadius: 3, overflow: 'hidden' }}>
+                    <div style={{
+                      height: '100%', borderRadius: 3,
+                      width: `${Math.round((row.score / row.max) * 100)}%`,
+                      background: reportCard.color,
+                      transition: 'width 0.5s ease',
+                    }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ── End Turn Button (floating) ── */}
