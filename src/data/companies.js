@@ -1,44 +1,44 @@
 // All companies with full economic parameters
 
 export const BADGES = {
-  safeBet:      { id: 'safeBet',      label: '🛡️ Safe Bet'      },
-  steadyGrower: { id: 'steadyGrower', label: '📈 Steady Grower' },
-  balanced:     { id: 'balanced',     label: '⚡ Balanced'       },
-  highRisk:     { id: 'highRisk',     label: '🔥 High Risk'      },
-  wildCard:     { id: 'wildCard',     label: '🎲 Wild Card'      },
-  fadingOut:    { id: 'fadingOut',    label: '📉 Fading Out'     },
+  safeBet:      { id: 'safeBet',      label: '🛡️ Defensive',   termId: 'defensive'   },
+  steadyGrower: { id: 'steadyGrower', label: '📈 Growth',       termId: 'growth'      },
+  balanced:     { id: 'balanced',     label: '⚡ Balanced',      termId: null          },
+  highRisk:     { id: 'highRisk',     label: '🔥 Cyclical',     termId: 'cyclical'    },
+  wildCard:     { id: 'wildCard',     label: '🎲 Speculative',  termId: 'speculative' },
+  fadingOut:    { id: 'fadingOut',    label: '📉 Declining',    termId: 'declining'   },
 }
 
 export const BADGE_EXPLANATIONS = {
   safeBet: {
-    title: '🛡️ Safe Bet',
+    title: '🛡️ Defensive Stock',
     mood: 'happy',
-    text: "Steady, predictable, and boring — in the best way. This company barely budges in bad times and keeps growing in good times. The backbone of any great empire. Start here, stay here.",
+    text: "Steady, predictable, and boring — in the best way. Defensive stocks barely budge in a recession because people still buy food, medicine, and basic services no matter what. The backbone of any great portfolio.",
   },
   steadyGrower: {
-    title: '📈 Steady Grower',
+    title: '📈 Growth Stock',
     mood: 'happy',
-    text: "Not flashy, but dependable. Grows consistently turn after turn without drama. Great for building long-term wealth — the kind of company you buy and let compound quietly.",
+    text: "Not flashy, but dependable. Growth stocks compound quietly turn after turn — investors pay a premium for reliable, predictable expansion. Buy them and let the power of compounding do the work.",
   },
   balanced: {
     title: '⚡ Balanced',
     mood: 'thinking',
-    text: "Moderate risk with real upside potential. Feels the economy more than a Safe Bet but won't destroy you in a downturn. Good for mixing into a portfolio that needs growth without full chaos.",
+    text: "Moderate risk with real upside potential. Feels the economy more than a Defensive stock but won't destroy you in a recession. Good for mixing into a portfolio that needs growth without full volatility.",
   },
   highRisk: {
-    title: '🔥 High Risk',
+    title: '🔥 Cyclical Stock',
     mood: 'worried',
-    text: "Big swings — up AND down. Can rocket during booms and get crushed in slowdowns. Only buy if you have safer companies to cushion the blow. Watch sector cycles closely before committing!",
+    text: "Earnings surge during expansions and collapse during recessions — their performance follows the economic cycle closely. Only buy cyclicals if you have defensive anchors to cushion the blow. Watch sector cycles closely!",
   },
   wildCard: {
-    title: '🎲 Wild Card',
+    title: '🎲 Speculative Stock',
     mood: 'worried',
-    text: "Pure hype and trend energy. Can DOUBLE in value — or nearly collapse — based on what's hot. Ride the wave while it's building and GET OUT before it crashes. Timing is everything!",
+    text: "Pure hype and trend energy. High volatility means it can DOUBLE in value — or nearly collapse — based on the latest news. Ride the wave while it's building, but have an exit plan before it crashes.",
   },
   fadingOut: {
-    title: '📉 Fading Out',
+    title: '📉 Secular Decline',
     mood: 'worried',
-    text: "This company is slowly losing to newer trends or competition. Value bleeds away every turn — even in good times. Cheap doesn't mean bargain. Sometimes cheap just keeps getting cheaper!",
+    text: "This company is in long-term structural decline — losing ground to new technologies or shifting consumer habits. No expansion can fully reverse it. Cheap doesn't mean bargain. Sometimes cheap just keeps getting cheaper.",
   },
 }
 

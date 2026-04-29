@@ -16,7 +16,6 @@ export default function MarketTab({
   const [expandedROI, setExpandedROI] = useState(null)
 
   const econColor = getEconomyColor(economy.state)
-  const interestRate = difficulty === 'easy' ? 3 : difficulty === 'hard' ? 1 : 2
   const netWorth = calcNetWorth(cash, portfolio, companyStates)
   const ownedIds = Object.keys(portfolio)
 
@@ -350,7 +349,7 @@ export default function MarketTab({
               <div style={{ fontSize: 20, fontWeight: 900, color: econColor }}>{getEconomyLabel(economy.state)}</div>
               {(economy.preSignal === 'preSlowdown' || economy.preSignal === 'preBoom') && (
                 <div style={{ fontSize: 12, fontWeight: 600, color: '#6B7280', marginTop: 2 }}>
-                  {economy.preSignal === 'preSlowdown' ? '⚠️ Slowdown signal ahead' : '🌱 Recovery signal ahead'}
+                  {economy.preSignal === 'preSlowdown' ? '⚠️ Leading Indicator: Recession ahead' : '🌱 Leading Indicator: Expansion ahead'}
                 </div>
               )}
             </div>
@@ -381,7 +380,7 @@ export default function MarketTab({
                   </div>
                   {isUnlocked && cycle && (cycle.preSignal === 'preSlowdown' || cycle.preSignal === 'preBoom') && (
                     <div style={{ fontSize: 11, fontWeight: 600, color: '#9CA3AF', marginTop: 1 }}>
-                      {cycle.preSignal === 'preSlowdown' ? '⚠️ Slowing' : '🌱 Recovering'}
+                      {cycle.preSignal === 'preSlowdown' ? '⚠️ Leading Indicator: Downturn' : '🌱 Leading Indicator: Expansion'}
                     </div>
                   )}
                 </div>
@@ -454,25 +453,6 @@ export default function MarketTab({
           )
         })()}
 
-        {/* Interest Rate */}
-        <div style={{ background: '#fff', borderRadius: 14, padding: '14px', boxShadow: '0 1px 4px rgba(0,0,0,0.05)' }}>
-          <div style={{ fontSize: 12, fontWeight: 800, color: '#374151', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
-            💵 Cash Interest
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div>
-              <span style={{ fontSize: 26, fontWeight: 900, color: '#16A34A' }}>{interestRate}%</span>
-              <span style={{ fontSize: 14, fontWeight: 600, color: '#6B7280', marginLeft: 6 }}>per turn</span>
-            </div>
-            <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: '#6B7280' }}>Earning this turn</div>
-              <div style={{ fontSize: 18, fontWeight: 800, color: '#16A34A' }}>+{formatMoney(Math.round(cash * interestRate / 100))}</div>
-            </div>
-          </div>
-          <p style={{ fontSize: 12, color: '#6B7280', fontWeight: 600, marginTop: 8, lineHeight: 1.4 }}>
-            Your idle cash earns {interestRate}% interest every turn — free money! But companies earn way more. Find the right balance.
-          </p>
-        </div>
 
       </div>
     </div>

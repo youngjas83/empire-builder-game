@@ -37,12 +37,6 @@ export const SECTOR_RATES = {
   downturn: { profit: -0.15, mult: -0.05 },
 }
 
-export const INTEREST_RATES = {
-  easy:   0.03,
-  normal: 0.02,
-  hard:   0.01,
-}
-
 export const WILD_CARD_PROBS = {
   easy:   0.20,
   normal: 0.12,
@@ -52,6 +46,8 @@ export const WILD_CARD_PROBS = {
 export const SETBACK_PROBS = {
   hard: 0.10,
 }
+
+export const VICTOR_SNATCH_PROB = 0.40
 
 // ─── Initial State ────────────────────────────────────────────────────────────
 
@@ -122,6 +118,8 @@ export function createInitialGameState(empireName, difficulty) {
     chipGuideStep: 0,       // 0-3 = active guide, 4 = done
     companyNewsEffects: {}, // { [companyId]: ±0.06 } — applied next resolveEndTurn
     sawLocationTutorial: false,
+    crisisEvent: null,
+    victorSnatched: null,
   }
 }
 
@@ -244,15 +242,10 @@ export function resolveEndTurn(state) {
   })
   cash = cash + totalProfit
 
-  // 3. Apply cash interest
-  const interestRate = INTEREST_RATES[difficulty] || INTEREST_RATES.normal
-  const interestEarned = Math.round(cash * interestRate)
-  cash = cash + interestEarned
+  // Track total earned this turn for the earn animation
+  const earnedThisTurn = totalProfit
 
-  // Track total earned this turn (profits + interest) for the earn animation
-  const earnedThisTurn = totalProfit + interestEarned
-
-  // 4. Advance economy cycle
+  // 3. Advance economy cycle
   const newEconomy = advanceCycle(economy, ['booming', 'steady', 'slowdown'])
 
   // 5. Advance sector cycles
@@ -305,23 +298,92 @@ export function resolveEndTurn(state) {
       if (riskyOwned.length > 0 && Math.random() < SETBACK_PROBS.hard) {
         const targetId = riskyOwned[Math.floor(Math.random() * riskyOwned.length)]
         const co = COMPANIES.find(c => c.id === targetId)
+        const currentValue = Math.round(companyStates[targetId].profit * companyStates[targetId].multiplier)
+
+        const adversityRoll = Math.random()
+        let effectType, effect, text, fineAmount
+
+        if (adversityRoll < 0.40) {
+          // Earnings drain (original)
+          effectType = 'earningsDrain'
+          effect = -0.30
+          const penalty = Math.round(companyStates[targetId].profit * 0.30)
+          cash = Math.max(0, cash - penalty)
+          text = getSetbackText(targetId, co)
+        } else if (adversityRoll < 0.70) {
+          // Valuation drop — permanent multiplier hit
+          effectType = 'valuationDrop'
+          effect = -0.15
+          const floor = co ? co.multFloor : 1
+          companyStates[targetId].multiplier = Math.max(floor, companyStates[targetId].multiplier * 0.85)
+          text = getValuationDropText(targetId, co)
+        } else {
+          // Emergency fine — cash penalty = 8% of company value
+          effectType = 'emergencyFine'
+          effect = -0.08
+          fineAmount = Math.round(currentValue * 0.08)
+          cash = Math.max(0, cash - fineAmount)
+          text = getEmergencyFineText(targetId, co)
+        }
+
         wildCard = {
           type: 'setback',
+          effectType,
           companyId: targetId,
           companyName: co ? co.name : targetId,
           companyEmoji: co ? co.emoji : '🏢',
-          effect: -0.30,
-          text: getSetbackText(targetId, co),
+          effect,
+          text,
+          ...(fineAmount !== undefined && { fineAmount }),
         }
-        const penalty = Math.round(companyStates[targetId].profit * 0.30)
-        cash = Math.max(0, cash - penalty)
         newLastWildCardTurn = turn
       }
     }
   }
 
+  // 6b. Crisis events — only if no wild card fired, player owns a risky company
+  let crisisEvent = null
+  if (!wildCard && ownedIds.length > 0) {
+    const riskyOwned = ownedIds.filter(id => {
+      const co = COMPANIES.find(c => c.id === id)
+      return co && (co.badge === 'highRisk' || co.badge === 'wildCard')
+    })
+    if (riskyOwned.length > 0 && Math.random() < 0.10) {
+      const targetId = riskyOwned[Math.floor(Math.random() * riskyOwned.length)]
+      const co = COMPANIES.find(c => c.id === targetId)
+      const currentValue = Math.round(companyStates[targetId].profit * companyStates[targetId].multiplier)
+      const payAmount = Math.round(currentValue * 0.07)
+      crisisEvent = {
+        companyId: targetId,
+        companyName: co ? co.name : targetId,
+        companyEmoji: co ? co.emoji : '🏢',
+        payAmount,
+        penaltyPct: 0.20,
+        text: getCrisisText(targetId, co),
+      }
+    }
+  }
+
+  // 6c. Victor flash sale snatch (hard mode only)
+  // Fires when a flash sale was visible this turn and player didn't buy it
+  let victorSnatched = null
+  if (
+    difficulty === 'hard' &&
+    state.flashSale &&
+    !updatedPortfolio[state.flashSale.companyId] &&
+    Math.random() < VICTOR_SNATCH_PROB
+  ) {
+    const vco = COMPANIES.find(c => c.id === state.flashSale.companyId)
+    victorSnatched = {
+      companyId: state.flashSale.companyId,
+      companyName: vco ? vco.name : state.flashSale.companyId,
+      companyEmoji: vco ? vco.emoji : '🏢',
+    }
+  }
+
   // 7. Flash sale management
-  let flashSale = state.flashSale || null
+  // If Victor snatched the current sale, treat it as gone before decrement
+  let flashSale = (victorSnatched ? null : state.flashSale) || null
   let newFlashSale = flashSale ? { ...flashSale, turnsLeft: flashSale.turnsLeft - 1 } : null
   if (newFlashSale && newFlashSale.turnsLeft <= 0) newFlashSale = null
 
@@ -411,9 +473,10 @@ export function resolveEndTurn(state) {
     turnActions: {},
     currentNews: newNews,
     flashSale: newFlashSale,
-    showNewsModal: !wildCard,
+    showNewsModal: !wildCard && !crisisEvent,
     wildCard,
     showWildCard: !!wildCard,
+    crisisEvent,
     level: newLevel,
     justLeveledUp,
     earnedThisTurn,
@@ -428,6 +491,7 @@ export function resolveEndTurn(state) {
     showBillionScreen: newNetWorth >= 1000000000 && !state.billionHit,
     billionTurn: (!state.billionHit && newNetWorth >= 1000000000) ? turn : state.billionTurn,
     companyNewsEffects: newCompanyNewsEffects,
+    victorSnatched,
   }
 }
 
@@ -688,6 +752,34 @@ const SETBACK_TEXTS = {
   celebbuzz: "CelebBuzz's biggest star just quit — half the client list is in chaos! 🌪️",
 }
 
+const VALUATION_DROP_TEXTS = {
+  novadrip:       "Hedge funds dump NovaDrip shares — the hype cycle is fading. P/E ratio craters overnight.",
+  toycraze:       "Analysts say the ToyCraze craze is over. Wall Street slashes the valuation in half.",
+  sunvilla:       "A damaging travel advisory hits SunVilla's target market. Investors rush for the exit.",
+  neuralaim:      "NeuralAI's funding round collapses. Investors panic and the valuation drops hard.",
+  chipforge:      "ChipForge's biggest client switches suppliers. Wall Street cuts the price target immediately.",
+  gameboxstudios: "Leaked roadmaps show major GameBox Studios delays — investors dump the stock before launch.",
+  celebbuzz:      "CelebBuzz loses its top three clients in one week. Valuation crumbles fast.",
+}
+
+const EMERGENCY_FINE_TEXTS = {
+  novadrip:       "NovaDrip hit with a surprise customs fine on overseas inventory. Lawyers' fees spiralling.",
+  toycraze:       "ToyCraze faces an emergency product safety fine. The regulator wants cash — now.",
+  sunvilla:       "SunVilla ordered to pay emergency environmental penalties for coastal violations.",
+  neuralaim:      "NeuralAI hit with an unexpected data-privacy fine. Pay up or face a government shutdown.",
+  chipforge:      "ChipForge's export licence suspended — emergency legal costs to reinstate it.",
+  gameboxstudios: "GameBox Studios loses an IP lawsuit. Emergency settlement drains the war chest.",
+  celebbuzz:      "CelebBuzz hit with an emergency employment tribunal payout. Costly but unavoidable.",
+}
+
+function getValuationDropText(id, co) {
+  return VALUATION_DROP_TEXTS[id] || `${co ? co.name : id} faces a sharp valuation downgrade — P/E ratio takes a hit.`
+}
+
+function getEmergencyFineText(id, co) {
+  return EMERGENCY_FINE_TEXTS[id] || `${co ? co.name : id} hit with an emergency regulatory fine.`
+}
+
 function getWildCardText(id, co) {
   const options = WILD_CARD_TEXTS[id]
   if (Array.isArray(options) && options.length > 0) {
@@ -698,6 +790,25 @@ function getWildCardText(id, co) {
 
 function getSetbackText(id, co) {
   return SETBACK_TEXTS[id] || `${co ? co.name : id} hits an unexpected obstacle — tough turn!`
+}
+
+const CRISIS_TEXTS = {
+  novadrip:       ["NovaDrip's lead designer just quit and leaked next season's designs online. Pay for a PR crisis team or the collection tanks.", "A major retailer is threatening to drop NovaDrip over a quality dispute. Settle now or they pull the contract."],
+  toycraze:       ["A government safety watchdog is investigating ToyCraze's bestseller. Pay for an independent audit now or face a forced recall.", "A viral video claims a ToyCraze toy is dangerous. Pay to fund a rapid safety review or watch the story spread."],
+  pixelwear:      ["PixelWear's supplier was caught using unethical labour. Pay to switch suppliers quietly or face a boycott campaign."],
+  sunvilla:       ["A guest at SunVilla is suing over an injury. Settle out of court now or the lawsuit goes public and damages the brand.", "SunVilla's main pool failed a health inspection. Pay to fix it before press finds out or face a public closure order."],
+  neuralai:       ["NeuralAI's model produced biased outputs that went viral. Pay for an emergency audit or the media firestorm grows.", "A competitor is accusing NeuralAI of IP theft. Pay legal fees to settle quietly or fight it in public court."],
+  chipforge:      ["A batch of ChipForge chips has a defect. Pay for a quiet recall and fix, or let it become a public crisis.", "ChipForge is being investigated for antitrust violations. Pay for legal defence now or face a government freeze."],
+  celebbuzz:      ["CelebBuzz's biggest client just got caught in a scandal. Pay for damage control or lose the client and the press goes wild.", "A former employee is threatening to sell inside stories about CelebBuzz clients. Pay for an NDA settlement or risk the fallout."],
+  gameboxstudios: ["GameBox Studios shipped a game-breaking bug in their flagship title. Pay for emergency patches or face mass refund demands.", "GameBox Studios is accused of crunch culture. Pay for a staff wellbeing programme or face a union drive."],
+}
+
+function getCrisisText(id, co) {
+  const options = CRISIS_TEXTS[id]
+  if (Array.isArray(options) && options.length > 0) {
+    return options[Math.floor(Math.random() * options.length)]
+  }
+  return `${co ? co.name : id} is facing an unexpected crisis. Act now to contain the damage.`
 }
 
 // ─── Format Helpers ───────────────────────────────────────────────────────────
@@ -735,13 +846,13 @@ export function getEconomyColor(state) {
 }
 
 export function getEconomyLabel(state) {
-  if (state === 'booming') return '🟢 Booming'
-  if (state === 'slowdown') return '🔴 Slowdown'
-  return '🟡 Steady'
+  if (state === 'booming') return '🟢 Expansion'
+  if (state === 'slowdown') return '🔴 Recession'
+  return '🟡 Stable'
 }
 
 export function getSectorStateLabel(state) {
-  if (state === 'boom') return '🟢 Boom'
+  if (state === 'boom') return '🟢 Expansion'
   if (state === 'downturn') return '🔴 Downturn'
   return '🟡 Normal'
 }

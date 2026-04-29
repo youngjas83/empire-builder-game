@@ -35,6 +35,9 @@ import SmartTradeToast from './components/SmartTradeToast.jsx'
 import SectorUnlockScreen from './components/SectorUnlockScreen.jsx'
 import AchievementToast from './components/AchievementToast.jsx'
 import BillionScreen from './components/BillionScreen.jsx'
+import CrisisModal from './components/CrisisModal.jsx'
+import TermModal from './components/TermModal.jsx'
+import VictorToast from './components/VictorToast.jsx'
 
 // ─── Persistence & Leaderboard ────────────────────────────────────────────────
 
@@ -85,6 +88,9 @@ function sanitizeGameState(state) {
     newAchievement: null,
     smartTrade: null,
     showSectorUnlock: null,
+    crisisEvent: null,
+    termModal: null,
+    victorSnatched: null,
     viewingCompany: null,
     viewingCompanyBack: false,
     viewingSector: null,
@@ -111,20 +117,20 @@ function createSetupState() {
 const ECONOMY_EXPLAIN = {
   booming: {
     emoji: '🚀',
-    title: 'Economy: Booming!',
-    text: "Everything is on fire — in a good way! Company profits and values are boosted across the board. This is a great time to buy or expand locations.",
+    title: 'Expansion',
+    text: "The economy is in an expansion — businesses earn more, people spend more, and company values rise across the board. Cyclical and speculative stocks benefit most. A great time to buy or expand locations.",
     mood: '#22C55E',
   },
   steady: {
     emoji: '⚖️',
-    title: 'Economy: Steady',
-    text: "The economy is humming along normally. Profits and multipliers are at their baseline. A good time to be selective and plan ahead.",
+    title: 'Stable Economy',
+    text: "Neither boom nor bust — the economy is ticking along normally. Earnings and valuations stay close to their baseline. A good time to be selective and look for undervalued companies.",
     mood: '#1D4ED8',
   },
   slowdown: {
     emoji: '📉',
-    title: 'Economy: Slowdown',
-    text: "Things are tough out there. Profits and company values are depressed. Be cautious with big purchases — but some sectors weather it better than others!",
+    title: 'Recession',
+    text: "The economy is in a recession — businesses earn less, spending drops, and company values fall. Defensive stocks hold up best. Be cautious with new purchases and watch your cyclical holdings closely.",
     mood: '#EF4444',
   },
 }
@@ -384,8 +390,42 @@ export default function App() {
       ...s,
       wildCard: null,
       showWildCard: false,
-      showNewsModal: true,
+      showNewsModal: !s.crisisEvent,
     }))
+  }
+
+  function handlePayCrisis() {
+    setAppState(s => {
+      if (!s.crisisEvent) return s
+      return {
+        ...s,
+        cash: s.cash - s.crisisEvent.payAmount,
+        crisisEvent: null,
+        showNewsModal: true,
+      }
+    })
+  }
+
+  function handleIgnoreCrisis() {
+    setAppState(s => {
+      if (!s.crisisEvent) return s
+      const id = s.crisisEvent.companyId
+      const newStates = { ...s.companyStates }
+      if (newStates[id]) {
+        const co = COMPANIES.find(c => c.id === id)
+        const floor = co ? co.multFloor : 1
+        newStates[id] = {
+          ...newStates[id],
+          multiplier: Math.max(floor, newStates[id].multiplier * (1 - s.crisisEvent.penaltyPct)),
+        }
+      }
+      return {
+        ...s,
+        companyStates: newStates,
+        crisisEvent: null,
+        showNewsModal: true,
+      }
+    })
   }
 
   function handleCloseNews() {
@@ -428,6 +468,18 @@ export default function App() {
 
   function handleCloseBadge() {
     setAppState(s => ({ ...s, badgeModal: null }))
+  }
+
+  function handleTermTap(termId) {
+    setAppState(s => ({ ...s, termModal: termId }))
+  }
+
+  function handleCloseTerm() {
+    setAppState(s => ({ ...s, termModal: null }))
+  }
+
+  function handleDismissVictorToast() {
+    setAppState(s => ({ ...s, victorSnatched: null }))
   }
 
   function handleShowLevelSheet() {
@@ -543,7 +595,7 @@ export default function App() {
     showEarnAnimation, earnedThisTurn, showBuyToast, showEconomyModal,
     smartTrade, showSectorUnlock, newAchievement,
     showBillionScreen, onboardingDismissed,
-    chipGuideStep, companyNewsEffects,
+    chipGuideStep, companyNewsEffects, crisisEvent, termModal, victorSnatched,
   } = appState
 
   const netWorth = calcNetWorth(cash, portfolio, companyStates)
@@ -598,6 +650,7 @@ export default function App() {
             onViewDetails={handleViewCompanyDetails}
             companyNewsEffects={companyNewsEffects}
             chipGuideStep={chipGuideStep}
+            onTermTap={handleTermTap}
           />
         )}
 
@@ -630,6 +683,7 @@ export default function App() {
                 onEditName={handleEditName}
                 onEconomyPillTap={handleEconomyPillTap}
                 onDismissLocationTutorial={handleDismissLocationTutorial}
+                onTermTap={handleTermTap}
               />
             )}
             {activeTab === 'news' && (
@@ -682,8 +736,18 @@ export default function App() {
         <WildCardScreen wildCard={wildCard} onContinue={handleWildCardContinue} />
       )}
 
+      {/* Crisis Modal — shown after wild card resolves, before news */}
+      {crisisEvent && !showWildCard && (
+        <CrisisModal
+          crisis={crisisEvent}
+          cash={cash}
+          onPay={handlePayCrisis}
+          onIgnore={handleIgnoreCrisis}
+        />
+      )}
+
       {/* News Modal */}
-      {showNewsModal && !showWildCard && currentNews && (
+      {showNewsModal && !showWildCard && !crisisEvent && currentNews && (
         <NewsModal
           turn={turn}
           currentNews={currentNews}
@@ -713,6 +777,11 @@ export default function App() {
       {/* Badge Modal */}
       {badgeModal && (
         <BadgeModal badgeId={badgeModal} onClose={handleCloseBadge} />
+      )}
+
+      {/* Term Modal */}
+      {termModal && (
+        <TermModal termId={termModal} onClose={handleCloseTerm} />
       )}
 
       {/* Level Sheet */}
@@ -767,6 +836,11 @@ export default function App() {
           trade={smartTrade}
           onDone={handleDismissSmartTrade}
         />
+      )}
+
+      {/* Victor Snatch Toast — hard mode flash sale stolen notification */}
+      {victorSnatched && (
+        <VictorToast victorSnatched={victorSnatched} onDone={handleDismissVictorToast} />
       )}
 
       {/* Achievement Toast */}

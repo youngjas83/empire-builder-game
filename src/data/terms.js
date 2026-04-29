@@ -1,0 +1,86 @@
+export const TERMS = {
+  pe_ratio: {
+    term: 'P/E Ratio',
+    plain: 'Price-to-Earnings Ratio',
+    definition: 'How much investors pay for every $1 a company earns. A P/E of 20× means investors pay $20 for each $1 of profit. Higher P/E = investors expect strong future growth.',
+    example: 'CloudCore trades at 22× — investors are paying a premium because they believe cloud computing will keep growing fast.',
+  },
+  recession: {
+    term: 'Recession',
+    plain: 'Economic downturn',
+    definition: 'When the overall economy shrinks — businesses earn less, people spend less, and company values drop. Recessions are a normal part of the economic cycle and always end eventually.',
+    example: 'During a recession, cyclical companies like luxury resorts get hit hardest because people cut non-essential spending first.',
+  },
+  expansion: {
+    term: 'Expansion',
+    plain: 'Economic growth period',
+    definition: 'When the economy is growing — businesses earn more, people spend more, and company values rise. Also called a "boom." The economy naturally moves between expansion and recession.',
+    example: 'In an expansion, even riskier companies tend to perform well as money flows freely through the economy.',
+  },
+  stable: {
+    term: 'Stable Economy',
+    plain: 'Normal conditions — neither boom nor bust',
+    definition: 'The economy is ticking along normally. No strong growth, no shrinkage. Company values stay close to their baseline and it\'s a good time to be selective.',
+    example: 'Stable periods are ideal for analysing companies carefully and buying at fair prices before the next expansion.',
+  },
+  volatility: {
+    term: 'Volatility',
+    plain: 'How wildly a company\'s value swings',
+    definition: 'High volatility means a company\'s value can jump or crash dramatically from one period to the next. Low volatility means it stays relatively steady. More volatile = more risk AND more potential reward.',
+    example: 'A speculative AI company is highly volatile — it could double or halve in value quickly depending on the latest news.',
+  },
+  earnings: {
+    term: 'Earnings',
+    plain: 'A company\'s profit after costs',
+    definition: 'The money a company makes after paying all its costs — wages, rent, materials, taxes. Earnings are the engine of company value: higher earnings usually means a higher stock price.',
+    example: 'BurgerBlast has stable earnings because people always need to eat, even in a recession.',
+  },
+  defensive: {
+    term: 'Defensive Stock',
+    plain: 'Safe, stable investment',
+    definition: 'Companies that hold their value even in a recession. People still buy food, medicine, and basic services no matter how bad the economy gets. Boring — but reliably profitable.',
+    example: 'Discount grocers like FreshMart are classic defensives — they actually get more customers when times are tough.',
+  },
+  cyclical: {
+    term: 'Cyclical Stock',
+    plain: 'Rises and falls with the economy',
+    definition: 'Companies whose earnings surge during expansions and collapse during recessions. Their performance follows the economic cycle closely. High risk, high reward if you time it right.',
+    example: 'SunVilla is cyclical — luxury holidays are the first thing people cut when money gets tight.',
+  },
+  growth: {
+    term: 'Growth Stock',
+    plain: 'Steady, reliable long-term grower',
+    definition: 'Companies expected to grow faster than average over time. Less dramatic than cyclicals, more upside than defensives. Investors pay a premium for reliable, compounding growth.',
+    example: 'AppNation grows steadily because its app store fees compound quietly as smartphone usage increases every year.',
+  },
+  declining: {
+    term: 'Secular Decline',
+    plain: 'Structurally shrinking business',
+    definition: 'A company in long-term decline because of a permanent shift in how people live or work — not just a bad year. No economic boom can fully reverse structural decline.',
+    example: 'NightOwl Cinemas is in secular decline as streaming replaces the habit of going to the cinema.',
+  },
+  speculative: {
+    term: 'Speculative Stock',
+    plain: 'High risk, high reward — driven by hype',
+    definition: 'Companies with unpredictable earnings, fuelled by trends, hype, or breakthrough technology. Can surge massively or crash hard. Timing and news matter enormously.',
+    example: 'NeuralAI is speculative — AI could be transformative, or investor enthusiasm could cool quickly.',
+  },
+  leading_indicator: {
+    term: 'Leading Indicator',
+    plain: 'An early warning signal for what\'s coming',
+    definition: 'Data or signals that predict where the economy is heading before it actually gets there. Smart investors watch leading indicators to stay one step ahead of the market.',
+    example: 'Falling consumer confidence is a leading indicator of an upcoming recession — people start cutting back before the data officially confirms it.',
+  },
+  sector_expansion: {
+    term: 'Sector Expansion',
+    plain: 'A specific industry is booming',
+    definition: 'When one industry experiences unusually strong growth — higher demand, rising profits, and climbing valuations across all companies in that sector, even if the wider economy is steady.',
+    example: 'A tech sector expansion lifts all tech companies, even weaker ones that wouldn\'t normally stand out.',
+  },
+  sector_downturn: {
+    term: 'Sector Downturn',
+    plain: 'A specific industry is under pressure',
+    definition: 'When one industry faces falling demand, shrinking profits, and dropping valuations. Sector downturns can happen even when the broader economy is healthy.',
+    example: 'Real estate can enter a downturn while tech is booming — sectors move independently.',
+  },
+}

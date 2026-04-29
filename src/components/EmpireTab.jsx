@@ -112,12 +112,12 @@ function calcReportCard(state, netWorth, profitPerTurn) {
 }
 
 function getSectorCycleBadgeLabel(cycle) {
-  if (!cycle) return '🟡 Normal'
-  if (cycle.state === 'boom') return '🟢 Boom'
-  if (cycle.state === 'downturn') return '🔴 Downturn'
-  if (cycle.preSignal === 'preSlowdown') return '🟡 Normal · ⚠️ Slowing'
-  if (cycle.preSignal === 'preBoom') return '🟡 Normal · 🌱 Recovering'
-  return '🟡 Normal'
+  if (!cycle) return { text: '🟡 Normal', termId: null }
+  if (cycle.state === 'boom') return { text: '🟢 Expansion', termId: 'sector_expansion' }
+  if (cycle.state === 'downturn') return { text: '🔴 Downturn', termId: 'sector_downturn' }
+  if (cycle.preSignal === 'preSlowdown') return { text: '⚠️ Leading Indicator: Downturn', termId: 'leading_indicator' }
+  if (cycle.preSignal === 'preBoom') return { text: '🌱 Leading Indicator: Expansion', termId: 'leading_indicator' }
+  return { text: '🟡 Normal', termId: null }
 }
 
 export default function EmpireTab({
@@ -128,6 +128,7 @@ export default function EmpireTab({
   onEditName,
   onEconomyPillTap,
   onDismissLocationTutorial,
+  onTermTap,
 }) {
   const [expandedCard, setExpandedCard] = useState(null)
   const {
@@ -145,9 +146,8 @@ export default function EmpireTab({
     ? Math.min(1, (netWorth - currentLevelData.requirement) / (nextLevelData.requirement - currentLevelData.requirement))
     : 1
 
-  const interestRate = state.difficulty === 'easy' ? 0.03 : state.difficulty === 'hard' ? 0.01 : 0.02
   const reportCard = calcReportCard(state, netWorth, profitPerTurn)
-  const projectedEarnings = profitPerTurn + Math.round(cash * interestRate)
+  const projectedEarnings = profitPerTurn
 
   const endTurnLabel = projectedEarnings > 0
     ? `End Turn ${turn}  →  +${formatMoney(projectedEarnings)}`
@@ -406,6 +406,27 @@ export default function EmpireTab({
           )
         })()}
 
+        {/* Idle cash warning — shown when >35% of empire value is sitting in cash */}
+        {companiesOwned > 0 && netWorth > 0 && cash / netWorth > 0.35 && (
+          <div style={{
+            background: 'linear-gradient(135deg, #FFFBEB, #FEF3C7)',
+            border: '2px solid #FCD34D',
+            borderRadius: 16, padding: '13px 14px',
+            marginBottom: 10,
+            display: 'flex', alignItems: 'flex-start', gap: 12,
+          }}>
+            <span style={{ fontSize: 26, flexShrink: 0 }}>💤</span>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 900, color: '#92400E', marginBottom: 2 }}>
+                {formatMoney(cash)} is sitting idle
+              </div>
+              <div style={{ fontSize: 12, fontWeight: 600, color: '#92400E', lineHeight: 1.45 }}>
+                That's {Math.round((cash / netWorth) * 100)}% of your empire doing nothing. Companies earn far more than cash ever could — put it to work!
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Sector tiles */}
         {Object.values(SECTORS).map(sector => {
           const isUnlocked = level >= sector.unlockLevel
@@ -422,17 +443,18 @@ export default function EmpireTab({
             return co ? co.emoji : null
           }).filter(Boolean)
           const stateColor = getSectorStateColor(sectorState)
+          const cycleBadge = getSectorCycleBadgeLabel(sectorCycle)
 
           // Visual style per cycle state
           const tileStyle = (() => {
             if (sectorState === 'boom') return {
-              background: `linear-gradient(135deg, #FFFBEB 0%, #FEF9EC 50%, ${sector.color}10 100%)`,
-              border: '2px solid #FCD34D',
-              boxShadow: '0 4px 20px rgba(252,211,77,0.35)',
-              iconBg: 'linear-gradient(135deg, #FEF3C7, #FDE68A)',
-              iconBorder: '#FCD34D',
-              iconGlow: '0 0 22px rgba(252,211,77,0.7)',
-              nameColor: '#92400E',
+              background: `linear-gradient(135deg, #F0FDF4 0%, #ECFDF5 50%, ${sector.color}10 100%)`,
+              border: '2px solid #22C55E',
+              boxShadow: '0 4px 20px rgba(34,197,94,0.30)',
+              iconBg: 'linear-gradient(135deg, #DCFCE7, #BBF7D0)',
+              iconBorder: '#22C55E',
+              iconGlow: '0 0 22px rgba(34,197,94,0.65)',
+              nameColor: '#15803D',
               animClass: 'sectorBoomPulse',
             }
             if (sectorState === 'downturn') return {
@@ -528,7 +550,7 @@ export default function EmpireTab({
                 boxShadow: tileStyle.iconGlow,
               }}>
                 {sectorState === 'boom' ? (
-                  <span style={{ filter: 'drop-shadow(0 0 8px rgba(252,211,77,0.8))' }}>{sector.emoji}</span>
+                  <span style={{ filter: 'drop-shadow(0 0 8px rgba(34,197,94,0.85))' }}>{sector.emoji}</span>
                 ) : sectorState === 'downturn' ? (
                   <span style={{ filter: 'grayscale(0.5) opacity(0.75)' }}>{sector.emoji}</span>
                 ) : sector.emoji}
@@ -539,16 +561,21 @@ export default function EmpireTab({
                   <span style={{ fontSize: 16, fontWeight: 800, color: tileStyle.nameColor }}>
                     {sector.name}
                   </span>
-                  <div style={{
-                    fontSize: 10, fontWeight: 900,
-                    color: stateColor,
-                    background: stateColor + '20',
-                    border: `1px solid ${stateColor}40`,
-                    padding: '2px 8px', borderRadius: 10,
-                    flexShrink: 0,
-                  }}>
-                    {getSectorCycleBadgeLabel(sectorCycle)}
-                  </div>
+                  <button
+                    onClick={e => { e.stopPropagation(); cycleBadge.termId && onTermTap && onTermTap(cycleBadge.termId) }}
+                    style={{
+                      fontSize: 10, fontWeight: 900,
+                      color: stateColor,
+                      background: stateColor + '20',
+                      border: `1px solid ${stateColor}40`,
+                      padding: '2px 8px', borderRadius: 10,
+                      flexShrink: 0,
+                      cursor: cycleBadge.termId ? 'pointer' : 'default',
+                      fontFamily: 'inherit',
+                    }}
+                  >
+                    {cycleBadge.text}
+                  </button>
                 </div>
 
                 <div style={{ fontSize: 12, color: sectorState === 'downturn' ? '#9CA3AF' : '#6B7280', fontWeight: 600, lineHeight: 1.4, marginBottom: hasOwned ? 6 : 0 }}>
@@ -722,8 +749,8 @@ export default function EmpireTab({
           50% { box-shadow: 0 8px 36px rgba(34,197,94,0.75) }
         }
         @keyframes boomPulse {
-          0%, 100% { box-shadow: 0 4px 20px rgba(252,211,77,0.35) }
-          50%       { box-shadow: 0 6px 32px rgba(252,211,77,0.65) }
+          0%, 100% { box-shadow: 0 4px 20px rgba(34,197,94,0.30) }
+          50%       { box-shadow: 0 6px 32px rgba(34,197,94,0.60) }
         }
         .sectorBoomPulse {
           animation: boomPulse 2.2s ease-in-out infinite;

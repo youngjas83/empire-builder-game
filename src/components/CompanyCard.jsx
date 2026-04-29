@@ -47,6 +47,7 @@ export default function CompanyCard({
   sectorName,
   companyNewsEffects,
   chipGuideStep,
+  onTermTap,
 }) {
   const co = COMPANIES.find(c => c.id === companyId)
   if (!co) return null
@@ -313,10 +314,10 @@ export default function CompanyCard({
                   : riskTier === 'wild'  ? '1px solid rgba(167,139,250,0.5)'
                   : '1px solid rgba(255,255,255,0.15)',
           }}>
-            {riskTier === 'safe'   ? '🛡️ Safe Bet'
-           : riskTier === 'high'  ? '🔥 High Risk'
-           : riskTier === 'wild'  ? '🃏 Wild Card'
-           : '📉 Fading Out'}
+            {riskTier === 'safe'   ? '🛡️ Defensive'
+           : riskTier === 'high'  ? '🔥 Cyclical'
+           : riskTier === 'wild'  ? '🎲 Speculative'
+           : '📉 Declining'}
           </div>
         )}
       </div>
@@ -452,9 +453,14 @@ export default function CompanyCard({
             border: '1.5px solid #86EFAC',
             borderRadius: 14, padding: '13px 14px',
           }}>
-            <div style={{ fontSize: 10, fontWeight: 800, color: '#16A34A', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>
-              Profit/Turn{owned && owned.locations > 1 ? ` (×${owned.locations})` : ''}
-            </div>
+            <button
+              onClick={() => onTermTap && onTermTap('earnings')}
+              style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left' }}
+            >
+              <div style={{ fontSize: 10, fontWeight: 800, color: '#16A34A', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2, borderBottom: '1px dashed #86EFAC' }}>
+                Earnings/Turn{owned && owned.locations > 1 ? ` (×${owned.locations})` : ''}
+              </div>
+            </button>
             <div style={{ fontSize: 24, fontWeight: 900, color: '#15803D' }}>
               {formatMoney(owned ? effectiveProfit : cs.profit)}
             </div>
@@ -478,7 +484,7 @@ export default function CompanyCard({
           </div>
         </div>
 
-        {/* Value Multiplier golden tile */}
+        {/* P/E Ratio golden tile */}
         <div style={{
           background: 'linear-gradient(135deg, #FFFBEB, #FEF3C7)',
           border: '2px solid #FCD34D',
@@ -486,8 +492,15 @@ export default function CompanyCard({
           marginBottom: 14,
           boxShadow: '0 2px 8px rgba(252,211,77,0.3)',
         }}>
-          <div style={{ fontSize: 10, fontWeight: 800, color: '#92400E', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>
-            Value Multiplier
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+            <button
+              onClick={() => onTermTap && onTermTap('pe_ratio')}
+              style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left' }}
+            >
+              <div style={{ fontSize: 10, fontWeight: 800, color: '#92400E', textTransform: 'uppercase', letterSpacing: '0.06em', borderBottom: '1px dashed #D97706' }}>
+                P/E Ratio ⓘ
+              </div>
+            </button>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <span style={{ fontSize: 28, fontWeight: 900, color: '#78350F' }}>
@@ -495,10 +508,10 @@ export default function CompanyCard({
             </span>
             <div>
               <div style={{ fontSize: 13, color: '#92400E', fontWeight: 700 }}>
-                {formatMoney(Math.round(cs.profit))} × {cs.multiplier.toFixed(1)} = {formatMoney(value)}
+                Investors pay {cs.multiplier.toFixed(1)}× per $1 of earnings
               </div>
               <div style={{ fontSize: 11, color: '#A16207', fontWeight: 600, marginTop: 1 }}>
-                Higher multiplier = investors love it
+                {formatMoney(Math.round(cs.profit))} earnings × {cs.multiplier.toFixed(1)} = {formatMoney(value)}
               </div>
             </div>
           </div>
@@ -528,12 +541,17 @@ export default function CompanyCard({
             )}
           </div>
           <div style={{ textAlign: 'right', marginLeft: 16 }}>
-            <div style={{ fontSize: 10, fontWeight: 800, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
-              Stability
-            </div>
+            <button
+              onClick={() => onTermTap && onTermTap('volatility')}
+              style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit', textAlign: 'right', marginBottom: 8 }}
+            >
+              <div style={{ fontSize: 10, fontWeight: 800, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.06em', borderBottom: '1px dashed #CBD5E1' }}>
+                Volatility ⓘ
+              </div>
+            </button>
             <StabilityDots profSens={co.profSens} />
             <div style={{ fontSize: 10, color: '#9CA3AF', fontWeight: 600, marginTop: 4 }}>
-              {co.profSens <= 0.25 ? 'Very Stable' : co.profSens <= 0.50 ? 'Stable' : co.profSens <= 0.90 ? 'Moderate' : co.profSens <= 1.20 ? 'Risky' : 'Volatile'}
+              {co.profSens <= 0.25 ? 'Very Low' : co.profSens <= 0.50 ? 'Low' : co.profSens <= 0.90 ? 'Medium' : co.profSens <= 1.20 ? 'High' : 'Very High'}
             </div>
           </div>
         </div>

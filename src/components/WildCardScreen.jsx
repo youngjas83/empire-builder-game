@@ -2,6 +2,20 @@ import React from 'react'
 import Chip from './Chip.jsx'
 import { formatMoney } from '../game/engine.js'
 
+function getEffectPillText(wildCard) {
+  if (wildCard.type !== 'setback') {
+    return `+${Math.round(wildCard.effect * 100)}% bonus earnings this turn! 🚀`
+  }
+  switch (wildCard.effectType) {
+    case 'valuationDrop':
+      return 'P/E Ratio drops 15% — permanent devaluation! 📉'
+    case 'emergencyFine':
+      return `Emergency fine: ${formatMoney(wildCard.fineAmount || 0)} paid immediately`
+    default:
+      return `Earnings down ${Math.round(Math.abs(wildCard.effect) * 100)}% this turn`
+  }
+}
+
 // Deterministic confetti pieces — same layout every render, no random jitter
 const CONFETTI_PIECES = [
   { left: 8,  delay: 0.0, dur: 2.6, color: '#FCD34D', shape: 'circle', size: 10 },
@@ -153,9 +167,7 @@ export default function WildCardScreen({ wildCard, onContinue }) {
         color: theme.effectText,
         border: `1px solid ${theme.accentColor}40`,
       }}>
-        {isSetback
-          ? `Earnings down ${Math.round(Math.abs(wildCard.effect) * 100)}% this turn`
-          : `+${Math.round(wildCard.effect * 100)}% bonus earnings this turn! 🚀`}
+        {getEffectPillText(wildCard)}
       </div>
 
       <button
