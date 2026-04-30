@@ -13,13 +13,13 @@ export default function BottomNav({ activeTab, onTabChange }) {
       position: 'fixed',
       bottom: 0, left: '50%', transform: 'translateX(-50%)',
       width: '100%', maxWidth: 430,
-      background: 'rgba(255,255,255,0.95)',
-      borderTop: '1px solid rgba(0,0,0,0.08)',
+      background: 'rgba(8,13,26,0.96)',
+      borderTop: '1px solid rgba(255,255,255,0.07)',
       display: 'flex',
       paddingBottom: 'env(safe-area-inset-bottom, 0px)',
       zIndex: 200,
-      backdropFilter: 'blur(20px)',
-      WebkitBackdropFilter: 'blur(20px)',
+      backdropFilter: 'blur(24px)',
+      WebkitBackdropFilter: 'blur(24px)',
     }}>
       {TABS.map(tab => {
         const isActive = activeTab === tab.id
@@ -29,7 +29,7 @@ export default function BottomNav({ activeTab, onTabChange }) {
             onClick={() => onTabChange(tab.id)}
             style={{
               flex: 1,
-              padding: '10px 0 8px',
+              padding: '8px 0 6px',
               background: 'none',
               border: 'none',
               cursor: 'pointer',
@@ -41,34 +41,36 @@ export default function BottomNav({ activeTab, onTabChange }) {
               position: 'relative',
             }}
           >
-            {/* Active indicator dot above tab */}
+            {/* Active glow line at top */}
             {isActive && (
               <div style={{
                 position: 'absolute',
                 top: 0, left: '50%', transform: 'translateX(-50%)',
-                width: 28, height: 3,
-                background: 'linear-gradient(90deg, #1D4ED8, #7C3AED)',
+                width: 32, height: 2,
+                background: 'linear-gradient(90deg, #6366F1, #A78BFA)',
                 borderRadius: '0 0 3px 3px',
+                boxShadow: '0 0 10px rgba(99,102,241,0.7)',
               }} />
             )}
 
-            {/* Emoji in a tinted bubble when active */}
+            {/* Icon bubble */}
             <div style={{
-              width: 36, height: 30,
-              background: isActive ? 'linear-gradient(135deg, #EFF6FF, #E0E7FF)' : 'transparent',
+              width: 40, height: 28,
+              background: isActive ? 'rgba(99,102,241,0.18)' : 'transparent',
               borderRadius: 10,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               transition: 'background 0.15s',
+              boxShadow: isActive ? '0 0 14px rgba(99,102,241,0.25)' : 'none',
             }}>
-              <span style={{ fontSize: 20, lineHeight: 1 }}>{tab.emoji}</span>
+              <span style={{ fontSize: 19, lineHeight: 1 }}>{tab.emoji}</span>
             </div>
 
             <span style={{
               fontSize: 10,
-              fontWeight: isActive ? 900 : 600,
-              color: isActive ? '#1D4ED8' : '#94A3B8',
+              fontWeight: isActive ? 700 : 500,
+              color: isActive ? '#818CF8' : 'rgba(255,255,255,0.28)',
               transition: 'color 0.15s',
-              letterSpacing: '0.01em',
+              letterSpacing: '0.02em',
             }}>
               {tab.label}
             </span>

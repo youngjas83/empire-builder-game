@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+<title>Empire Builder – Dark Empire Mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;overflow:hidden;background:#000;}
+  body{font-family:'Space Grotesk',system-ui,sans-serif;-webkit-font-smoothing:antialiased;}
+
+  /* ── canvas ── */
+  .canvas{
+    width:100%;max-width:390px;height:100dvh;
+    margin:0 auto;
+    background:#080D1A;
+    position:relative;overflow:hidden;
+    display:flex;flex-direction:column;
+  }
+
+  /* dot-grid texture */
+  .canvas::before{
+    content:'';position:absolute;inset:0;
+    background-image:radial-gradient(rgba(96,165,250,0.09) 1px,transparent 1px);
+    background-size:24px 24px;
+    pointer-events:none;z-index:0;
+  }
+
+  /* ambient corner glows */
+  .glow-tl{
+    position:absolute;top:-80px;left:-80px;
+    width:320px;height:320px;border-radius:50%;
+    background:radial-gradient(circle,rgba(99,102,241,0.18) 0%,transparent 70%);
+    pointer-events:none;z-index:0;
+  }
+  .glow-br{
+    position:absolute;bottom:-100px;right:-60px;
+    width:280px;height:280px;border-radius:50%;
+    background:radial-gradient(circle,rgba(252,211,77,0.07) 0%,transparent 70%);
+    pointer-events:none;z-index:0;
+  }
+
+  /* ── scrollable body ── */
+  .body{flex:1;overflow-y:auto;position:relative;z-index:1;padding-bottom:80px;}
+  .body::-webkit-scrollbar{display:none;}
+
+  /* ── header ── */
+  .header{
+    position:relative;z-index:1;
+    padding:52px 20px 22px;
+    background:linear-gradient(170deg,#0F1729 0%,#0A1020 100%);
+    border-bottom:1px solid rgba(255,255,255,0.06);
+    overflow:hidden;
+  }
+  .header::after{
+    content:'';position:absolute;bottom:0;left:0;right:0;height:1px;
+    background:linear-gradient(90deg,transparent,rgba(99,102,241,0.5),rgba(252,211,77,0.3),transparent);
+  }
+  .header-glow{
+    position:absolute;top:-60px;right:-40px;
+    width:220px;height:220px;border-radius:50%;
+    background:radial-gradient(circle,rgba(99,102,241,0.22) 0%,transparent 65%);
+    pointer-events:none;
+  }
+
+  .empire-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;}
+  .empire-name{font-size:14px;font-weight:700;color:rgba(255,255,255,0.55);letter-spacing:0.04em;text-transform:uppercase;}
+  .turn-badge{
+    background:rgba(99,102,241,0.18);border:1px solid rgba(99,102,241,0.35);
+    border-radius:20px;padding:4px 12px;
+    font-size:12px;font-weight:700;color:#A5B4FC;
+  }
+
+  .net-worth-label{font-size:11px;font-weight:600;color:rgba(255,255,255,0.35);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:4px;}
+  .net-worth{
+    font-size:44px;font-weight:700;color:#FCD34D;
+    letter-spacing:-1.5px;line-height:1;
+    text-shadow:0 0 40px rgba(252,211,77,0.35);
+    margin-bottom:16px;
+  }
+
+  .pills{display:flex;gap:8px;flex-wrap:wrap;}
+  .pill{
+    display:flex;align-items:center;gap:5px;
+    border-radius:20px;padding:5px 12px;
+    font-size:12px;font-weight:600;
+  }
+  .pill-economy{background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.3);color:#4ADE80;}
+  .pill-cash{background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.7);}
+  .pill-profit{background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.3);color:#86EFAC;}
+
+  /* ── level bar ── */
+  .level-bar{
+    position:relative;z-index:1;
+    padding:10px 20px;
+    background:rgba(255,255,255,0.03);
+    border-bottom:1px solid rgba(255,255,255,0.05);
+    cursor:pointer;
+  }
+  .level-bar-row{display:flex;justify-content:space-between;margin-bottom:7px;}
+  .level-label{font-size:12px;font-weight:700;color:#818CF8;}
+  .level-target{font-size:11px;font-weight:600;color:rgba(255,255,255,0.3);}
+  .progress-track{height:4px;background:rgba(255,255,255,0.08);border-radius:4px;overflow:hidden;}
+  .progress-fill{
+    height:100%;width:34%;
+    background:linear-gradient(90deg,#6366F1,#A78BFA);
+    border-radius:4px;
+    box-shadow:0 0 8px rgba(139,92,246,0.6);
+  }
+
+  /* ── section padding ── */
+  .section{padding:14px 14px 0;}
+
+  /* ── sector tile (glass card) ── */
+  .tile{
+    display:flex;align-items:center;gap:14px;
+    padding:14px 16px;
+    margin-bottom:10px;
+    border-radius:18px;
+    cursor:pointer;
+    position:relative;overflow:hidden;
+    transition:transform 0.15s;
+    border:1px solid rgba(255,255,255,0.07);
+    background:rgba(255,255,255,0.04);
+    backdrop-filter:blur(12px);
+  }
+  .tile:active{transform:scale(0.98);}
+
+  .tile-boom{
+    border:1.5px solid rgba(34,197,94,0.4);
+    background:linear-gradient(135deg,rgba(34,197,94,0.08) 0%,rgba(255,255,255,0.03) 100%);
+    box-shadow:0 0 0 1px rgba(34,197,94,0.1),0 8px 32px rgba(34,197,94,0.12),inset 0 1px 0 rgba(34,197,94,0.15);
+    animation:boomPulse 2.5s ease-in-out infinite;
+  }
+  .tile-owned{
+    border:1.5px solid rgba(99,102,241,0.35);
+    background:linear-gradient(135deg,rgba(99,102,241,0.08) 0%,rgba(255,255,255,0.03) 100%);
+    box-shadow:0 4px 24px rgba(99,102,241,0.1);
+  }
+  .tile-downturn{
+    border:1.5px solid rgba(239,68,68,0.25);
+    background:linear-gradient(135deg,rgba(239,68,68,0.05) 0%,rgba(255,255,255,0.02) 100%);
+    opacity:0.8;
+  }
+  .tile-locked{opacity:0.35;filter:grayscale(0.5);}
+
+  @keyframes boomPulse{
+    0%,100%{box-shadow:0 0 0 1px rgba(34,197,94,0.1),0 8px 32px rgba(34,197,94,0.12),inset 0 1px 0 rgba(34,197,94,0.15);}
+    50%{box-shadow:0 0 0 1px rgba(34,197,94,0.2),0 8px 48px rgba(34,197,94,0.22),inset 0 1px 0 rgba(34,197,94,0.25);}
+  }
+
+  /* tile icon */
+  .tile-icon{
+    width:50px;height:50px;border-radius:14px;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;
+    font-size:24px;
+    background:rgba(255,255,255,0.06);
+    border:1px solid rgba(255,255,255,0.1);
+  }
+  .tile-icon-boom{background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.3);}
+  .tile-icon-owned{background:rgba(99,102,241,0.12);border:1px solid rgba(99,102,241,0.3);}
+  .tile-icon-downturn{background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);}
+
+  .tile-body{flex:1;min-width:0;}
+  .tile-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;}
+  .tile-name{font-size:15px;font-weight:700;color:#E2E8F0;}
+  .tile-name-boom{color:#4ADE80;}
+  .tile-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;flex-shrink:0;}
+  .badge-boom{background:rgba(34,197,94,0.18);border:1px solid rgba(34,197,94,0.4);color:#4ADE80;}
+  .badge-normal{background:rgba(234,179,8,0.15);border:1px solid rgba(234,179,8,0.3);color:#FCD34D;}
+  .badge-down{background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);color:#FCA5A5;}
+  .badge-lock{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.3);}
+
+  .tile-desc{font-size:12px;color:rgba(255,255,255,0.38);font-weight:500;line-height:1.4;margin-bottom:5px;}
+
+  .tile-owned-row{display:flex;align-items:center;gap:5px;}
+  .tile-owned-emoji{
+    font-size:14px;
+    background:rgba(99,102,241,0.15);
+    border:1px solid rgba(99,102,241,0.25);
+    border-radius:7px;padding:1px 6px;
+  }
+  .tile-owned-label{font-size:11px;font-weight:700;color:#818CF8;}
+
+  .tile-chevron{font-size:16px;color:rgba(255,255,255,0.2);flex-shrink:0;font-weight:300;}
+
+  /* ── company card ── */
+  .company-card{
+    margin:0 14px 10px;
+    border-radius:22px;overflow:hidden;
+    border:1.5px solid rgba(124,58,237,0.3);
+    box-shadow:0 8px 40px rgba(124,58,237,0.15),0 2px 0 rgba(255,255,255,0.05) inset;
+    background:linear-gradient(170deg,rgba(124,58,237,0.12) 0%,rgba(255,255,255,0.03) 100%);
+    backdrop-filter:blur(16px);
+  }
+  .card-art{
+    height:130px;position:relative;overflow:hidden;
+    background:linear-gradient(135deg,#DDD6FE 0%,#7C3AED 60%,#4C1D95 100%);
+    display:flex;align-items:center;justify-content:center;
+  }
+  .card-art-emoji{font-size:64px;filter:drop-shadow(0 4px 24px rgba(0,0,0,0.4));}
+  .card-art-badge{
+    position:absolute;top:10px;left:10px;
+    background:rgba(0,0,0,0.5);border:1px solid rgba(239,68,68,0.5);
+    border-radius:8px;padding:4px 10px;
+    font-size:11px;font-weight:700;color:#FCA5A5;
+    backdrop-filter:blur(8px);
+  }
+  .card-art-shimmer{
+    position:absolute;inset:0;
+    background:linear-gradient(105deg,transparent 30%,rgba(255,255,255,0.18) 50%,transparent 70%);
+    animation:shimmer 2.5s ease-in-out infinite;
+  }
+  @keyframes shimmer{0%{transform:translateX(-100%);}100%{transform:translateX(200%);}}
+
+  .card-body{padding:16px;}
+  .card-name-row{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;}
+  .card-name{font-size:20px;font-weight:700;color:#E2E8F0;}
+  .card-sector{font-size:11px;font-weight:600;color:rgba(255,255,255,0.35);margin-top:2px;}
+  .card-value-badge{
+    background:rgba(252,211,77,0.12);border:1px solid rgba(252,211,77,0.3);
+    border-radius:10px;padding:4px 10px;
+    font-size:13px;font-weight:700;color:#FCD34D;
+    white-space:nowrap;
+  }
+
+  .card-about{font-size:12px;color:rgba(255,255,255,0.45);line-height:1.55;margin-bottom:14px;}
+
+  .stats-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px;}
+  .stat-box{
+    background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);
+    border-radius:12px;padding:10px 10px 9px;
+    text-align:center;
+  }
+  .stat-label{font-size:10px;font-weight:600;color:rgba(255,255,255,0.35);letter-spacing:0.05em;text-transform:uppercase;margin-bottom:4px;}
+  .stat-value{font-size:15px;font-weight:700;color:#E2E8F0;}
+  .stat-value-green{color:#4ADE80;}
+  .stat-value-yellow{color:#FCD34D;}
+
+  .buy-btn{
+    width:100%;padding:15px;
+    background:linear-gradient(135deg,#7C3AED,#6D28D9);
+    border:none;border-radius:14px;
+    font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:700;
+    color:#fff;cursor:pointer;
+    box-shadow:0 6px 24px rgba(124,58,237,0.45),0 1px 0 rgba(255,255,255,0.1) inset;
+    transition:transform 0.12s;
+    letter-spacing:0.01em;
+  }
+  .buy-btn:active{transform:scale(0.97);}
+
+  /* ── bottom nav ── */
+  .bottom-nav{
+    position:relative;z-index:10;
+    display:flex;
+    background:rgba(8,13,26,0.92);
+    border-top:1px solid rgba(255,255,255,0.07);
+    backdrop-filter:blur(24px);
+    padding:8px 0 calc(8px + env(safe-area-inset-bottom,0px));
+  }
+  .nav-tab{
+    flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;
+    padding:6px 0;background:none;border:none;cursor:pointer;
+    font-family:'Space Grotesk',sans-serif;
+    transition:opacity 0.15s;
+    position:relative;
+  }
+  .nav-tab-active .nav-icon-wrap{
+    background:rgba(99,102,241,0.2);
+    box-shadow:0 0 16px rgba(99,102,241,0.3);
+  }
+  .nav-icon-wrap{
+    width:42px;height:30px;border-radius:10px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:20px;
+    background:transparent;
+    transition:background 0.15s,box-shadow 0.15s;
+  }
+  .nav-label{font-size:10px;font-weight:600;color:rgba(255,255,255,0.3);transition:color 0.15s;}
+  .nav-tab-active .nav-label{color:#818CF8;}
+  /* active indicator top line */
+  .nav-tab-active::before{
+    content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);
+    width:32px;height:2px;border-radius:0 0 3px 3px;
+    background:linear-gradient(90deg,#6366F1,#A78BFA);
+    box-shadow:0 0 8px rgba(99,102,241,0.6);
+  }
+
+  /* ── end turn button ── */
+  .end-turn-wrap{
+    position:absolute;bottom:80px;left:50%;transform:translateX(-50%);
+    width:calc(100% - 28px);max-width:362px;
+    z-index:5;
+  }
+  .end-turn{
+    width:100%;padding:16px;
+    background:linear-gradient(135deg,#16A34A,#22C55E);
+    border:none;border-radius:16px;
+    font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:700;
+    color:#fff;cursor:pointer;
+    box-shadow:0 6px 28px rgba(34,197,94,0.45),0 1px 0 rgba(255,255,255,0.15) inset;
+    animation:endPulse 2.2s ease-in-out infinite;
+    letter-spacing:0.01em;
+  }
+  @keyframes endPulse{
+    0%,100%{box-shadow:0 6px 28px rgba(34,197,94,0.45),0 1px 0 rgba(255,255,255,0.15) inset;}
+    50%{box-shadow:0 6px 44px rgba(34,197,94,0.65),0 1px 0 rgba(255,255,255,0.15) inset;}
+  }
+
+  /* ── view toggle ── */
+  .view-toggle{
+    display:flex;align-items:center;gap:8px;
+    padding:0 14px 12px;
+  }
+  .toggle-btn{
+    flex:1;padding:8px;
+    background:rgba(255,255,255,0.05);
+    border:1px solid rgba(255,255,255,0.08);
+    border-radius:10px;
+    font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:600;
+    color:rgba(255,255,255,0.45);cursor:pointer;
+    transition:all 0.15s;
+  }
+  .toggle-btn-active{
+    background:rgba(99,102,241,0.18);
+    border:1px solid rgba(99,102,241,0.4);
+    color:#A5B4FC;
+  }
+
+  /* flash sale badge */
+  .flash-badge{
+    position:absolute;top:10px;right:10px;
+    background:linear-gradient(135deg,#F59E0B,#EF4444);
+    border-radius:8px;padding:4px 10px;
+    font-size:11px;font-weight:700;color:#fff;
+    box-shadow:0 2px 12px rgba(245,158,11,0.5);
+    animation:flashGlow 1.5s ease-in-out infinite;
+  }
+  @keyframes flashGlow{
+    0%,100%{box-shadow:0 2px 12px rgba(245,158,11,0.5);}
+    50%{box-shadow:0 2px 24px rgba(245,158,11,0.8);}
+  }
+
+  /* ── label ── */
+  .mockup-label{
+    position:fixed;top:0;left:50%;transform:translateX(-50%);
+    background:rgba(99,102,241,0.9);
+    font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:700;color:#fff;
+    padding:4px 14px;border-radius:0 0 10px 10px;
+    letter-spacing:0.05em;text-transform:uppercase;z-index:9999;
+  }
+
+  /* ── screen switcher ── */
+  .screen{display:none;}
+  .screen.active{display:flex;flex-direction:column;height:100%;}
+</style>
+</head>
+<body>
+
+<div class="mockup-label">Dark Empire — Mockup</div>
+
+<div class="canvas">
+  <div class="glow-tl"></div>
+  <div class="glow-br"></div>
+
+  <!-- ══════ SCREEN A: EMPIRE TAB ══════ -->
+  <div class="screen active" id="screen-empire" style="flex-direction:column;height:100%;">
+
+    <!-- Header -->
+    <div class="header">
+      <div class="header-glow"></div>
+      <div class="empire-row">
+        <div class="empire-name">🏙️ Tech Ventures Inc</div>
+        <div class="turn-badge">Turn 14</div>
+      </div>
+      <div class="net-worth-label">Empire Value</div>
+      <div class="net-worth">$48.2M</div>
+      <div class="pills">
+        <div class="pill pill-economy">🟢 Expansion <span style="font-size:10px;opacity:0.7;">ⓘ</span></div>
+        <div class="pill pill-cash">💵 $6.1M</div>
+        <div class="pill pill-profit">+$1.4M/turn</div>
+      </div>
+    </div>
+
+    <!-- Level bar -->
+    <div class="level-bar">
+      <div class="level-bar-row">
+        <span class="level-label">L2 · City Mogul</span>
+        <span class="level-target">$200M to L3</span>
+      </div>
+      <div class="progress-track"><div class="progress-fill"></div></div>
+    </div>
+
+    <!-- Scrollable body -->
+    <div class="body">
+      <div class="section">
+
+        <!-- Sector: Consumer (Boom) -->
+        <div class="tile tile-boom" onclick="switchScreen('card')">
+          <div class="tile-icon tile-icon-boom">🛍️</div>
+          <div class="tile-body">
+            <div class="tile-head">
+              <span class="tile-name tile-name-boom">Consumer Market</span>
+              <span class="tile-badge badge-boom">🟢 Expansion</span>
+            </div>
+            <div class="tile-desc">Food, fashion, and everyday brands</div>
+            <div class="tile-owned-row">
+              <span class="tile-owned-emoji">🍔</span>
+              <span class="tile-owned-emoji">✨</span>
+              <span class="tile-owned-label">2 owned</span>
+            </div>
+          </div>
+          <div class="tile-chevron">›</div>
+        </div>
+
+        <!-- Sector: Real Estate (Owned) -->
+        <div class="tile tile-owned">
+          <div class="tile-icon tile-icon-owned">🏘️</div>
+          <div class="tile-body">
+            <div class="tile-head">
+              <span class="tile-name">Real Estate Market</span>
+              <span class="tile-badge badge-normal">🟡 Normal</span>
+            </div>
+            <div class="tile-desc">Apartments, storage, hotels, and warehouses</div>
+            <div class="tile-owned-row">
+              <span class="tile-owned-emoji">🏢</span>
+              <span class="tile-owned-label">1 owned</span>
+            </div>
+          </div>
+          <div class="tile-chevron">›</div>
+        </div>
+
+        <!-- Sector: Entertainment (Downturn) -->
+        <div class="tile tile-downturn">
+          <div class="tile-icon tile-icon-downturn">🎭</div>
+          <div class="tile-body">
+            <div class="tile-head">
+              <span class="tile-name">Entertainment Market</span>
+              <span class="tile-badge badge-down">🔴 Downturn</span>
+            </div>
+            <div class="tile-desc">Streaming, sports, and media companies</div>
+          </div>
+          <div class="tile-chevron">›</div>
+        </div>
+
+        <!-- Sector: Tech (Locked) -->
+        <div class="tile tile-locked">
+          <div class="tile-icon">💻</div>
+          <div class="tile-body">
+            <div class="tile-head">
+              <span class="tile-name">Tech Market</span>
+              <span class="tile-badge badge-lock">🔒 $200M</span>
+            </div>
+            <div class="tile-desc">Software, AI, and hardware innovators</div>
+          </div>
+          <div class="tile-chevron">›</div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- End Turn Button -->
+    <div style="position:relative;z-index:5;padding:0 14px 12px;">
+      <button class="end-turn">End Turn 14  →  +$1.4M</button>
+    </div>
+
+    <!-- Bottom Nav -->
+    <div class="bottom-nav">
+      <button class="nav-tab nav-tab-active">
+        <div class="nav-icon-wrap">🏙️</div>
+        <span class="nav-label">Empire</span>
+      </button>
+      <button class="nav-tab" onclick="switchScreen('news')">
+        <div class="nav-icon-wrap">📰</div>
+        <span class="nav-label">News</span>
+      </button>
+      <button class="nav-tab">
+        <div class="nav-icon-wrap">📊</div>
+        <span class="nav-label">Stats</span>
+      </button>
+      <button class="nav-tab">
+        <div class="nav-icon-wrap">🤖</div>
+        <span class="nav-label">Help</span>
+      </button>
+    </div>
+
+  </div><!-- /screen-empire -->
+
+
+  <!-- ══════ SCREEN B: COMPANY CARD ══════ -->
+  <div class="screen" id="screen-card" style="flex-direction:column;height:100%;">
+
+    <!-- Header (minimal) -->
+    <div class="header" style="padding:52px 20px 16px;">
+      <div class="header-glow"></div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <button onclick="switchScreen('empire')"
+          style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:10px;
+                 width:36px;height:36px;font-size:18px;cursor:pointer;color:#fff;display:flex;align-items:center;justify-content:center;">
+          ←
+        </button>
+        <div>
+          <div style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.08em;">Consumer Market</div>
+          <div style="font-size:16px;font-weight:700;color:#E2E8F0;">NovaDrip 👟</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="body" style="padding-bottom:20px;">
+      <!-- Company card -->
+      <div style="padding:14px;">
+        <div class="company-card">
+          <!-- Art panel -->
+          <div class="card-art">
+            <div class="card-art-shimmer"></div>
+            <div class="card-art-emoji">👟</div>
+            <div class="card-art-badge">🎲 Speculative</div>
+            <div class="flash-badge">⚡ 20% OFF</div>
+          </div>
+
+          <!-- Card body -->
+          <div class="card-body">
+            <div class="card-name-row">
+              <div>
+                <div class="card-name">NovaDrip</div>
+                <div class="card-sector">🛍️ Consumer Market</div>
+              </div>
+              <div class="card-value-badge">$5.6M</div>
+            </div>
+
+            <div class="card-about">
+              The hottest streetwear sneaker brand right now, riding a viral social media wave. Lightning-fast growth — but built entirely on staying trendy.
+            </div>
+
+            <!-- Stats -->
+            <div class="stats-grid">
+              <div class="stat-box">
+                <div class="stat-label">P/E Ratio</div>
+                <div class="stat-value stat-value-yellow">36×</div>
+              </div>
+              <div class="stat-box">
+                <div class="stat-label">Earnings/Turn</div>
+                <div class="stat-value stat-value-green">$156K</div>
+              </div>
+              <div class="stat-box">
+                <div class="stat-label">Volatility</div>
+                <div class="stat-value" style="color:#FCA5A5;">Very High</div>
+              </div>
+            </div>
+
+            <!-- Buy button -->
+            <button class="buy-btn">
+              Buy NovaDrip — $4.5M <span style="opacity:0.7;font-size:13px;">(20% off)</span>
+            </button>
+            <div style="text-align:center;margin-top:8px;font-size:12px;color:rgba(255,255,255,0.3);">
+              💡 Pays back in ~29 turns
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Nav -->
+    <div class="bottom-nav">
+      <button class="nav-tab nav-tab-active">
+        <div class="nav-icon-wrap">🏙️</div>
+        <span class="nav-label">Empire</span>
+      </button>
+      <button class="nav-tab">
+        <div class="nav-icon-wrap">📰</div>
+        <span class="nav-label">News</span>
+      </button>
+      <button class="nav-tab">
+        <div class="nav-icon-wrap">📊</div>
+        <span class="nav-label">Stats</span>
+      </button>
+      <button class="nav-tab">
+        <div class="nav-icon-wrap">🤖</div>
+        <span class="nav-label">Help</span>
+      </button>
+    </div>
+  </div><!-- /screen-card -->
+
+
+  <!-- ══════ SCREEN C: NEWS MODAL ══════ -->
+  <div class="screen" id="screen-news" style="flex-direction:column;height:100%;">
+    <div class="header" style="padding:52px 20px 16px;">
+      <div class="header-glow"></div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <button onclick="switchScreen('empire')"
+          style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:10px;
+                 width:36px;height:36px;font-size:18px;cursor:pointer;color:#fff;display:flex;align-items:center;justify-content:center;">
+          ←
+        </button>
+        <div>
+          <div style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.08em;">Turn 14 Briefing</div>
+          <div style="font-size:16px;font-weight:700;color:#E2E8F0;">Market Intel 📰</div>
+        </div>
+        <div style="margin-left:auto;">
+          <div style="background:rgba(252,211,77,0.12);border:1px solid rgba(252,211,77,0.3);border-radius:20px;padding:4px 12px;font-size:12px;font-weight:700;color:#FCD34D;">+$1.4M earned</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="body" style="padding:14px;padding-bottom:20px;">
+
+      <!-- Headline card -->
+      <div style="margin-bottom:10px;padding:16px;border-radius:18px;
+                  background:linear-gradient(135deg,rgba(34,197,94,0.1) 0%,rgba(255,255,255,0.04) 100%);
+                  border:1.5px solid rgba(34,197,94,0.3);
+                  box-shadow:0 4px 24px rgba(34,197,94,0.1);">
+        <div style="font-size:11px;font-weight:700;color:#4ADE80;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">🌍 Economy</div>
+        <div style="font-size:15px;font-weight:700;color:#E2E8F0;line-height:1.45;">Economy enters Expansion — all sectors report increased consumer confidence</div>
+      </div>
+
+      <!-- Company news -->
+      <div style="margin-bottom:10px;padding:16px;border-radius:18px;
+                  background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);">
+        <div style="font-size:11px;font-weight:700;color:#A5B4FC;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">🍔 BurgerBlast</div>
+        <div style="font-size:15px;font-weight:700;color:#E2E8F0;line-height:1.45;">BurgerBlast franchisees report record drive-through volumes this quarter</div>
+        <div style="margin-top:8px;font-size:12px;font-weight:600;color:#4ADE80;">↑ +6% P/E boost next turn</div>
+      </div>
+
+      <!-- Flash sale alert -->
+      <div style="margin-bottom:10px;padding:16px;border-radius:18px;
+                  background:linear-gradient(135deg,rgba(245,158,11,0.1) 0%,rgba(239,68,68,0.06) 100%);
+                  border:1.5px solid rgba(245,158,11,0.4);
+                  box-shadow:0 4px 24px rgba(245,158,11,0.12);
+                  animation:flashGlow 1.5s ease-in-out infinite;">
+        <div style="font-size:11px;font-weight:700;color:#FCD34D;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">⚡ Flash Sale — 2 turns left</div>
+        <div style="font-size:15px;font-weight:700;color:#E2E8F0;line-height:1.45;">NovaDrip 👟 is available at 20% off — $4.5M instead of $5.6M</div>
+        <button onclick="switchScreen('card')" style="margin-top:10px;width:100%;padding:11px;background:linear-gradient(135deg,#F59E0B,#EF4444);border:none;border-radius:11px;font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;color:#fff;cursor:pointer;letter-spacing:0.01em;">
+          View NovaDrip →
+        </button>
+      </div>
+
+      <!-- Neutral news -->
+      <div style="padding:16px;border-radius:18px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);">
+        <div style="font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">📊 Sector Signal</div>
+        <div style="font-size:15px;font-weight:700;color:#94A3B8;line-height:1.45;">Entertainment sector shows leading indicator of recovery — downturn may ease in 1–2 turns</div>
+      </div>
+
+    </div>
+
+    <!-- Bottom Nav -->
+    <div class="bottom-nav">
+      <button class="nav-tab" onclick="switchScreen('empire')">
+        <div class="nav-icon-wrap">🏙️</div>
+        <span class="nav-label">Empire</span>
+      </button>
+      <button class="nav-tab nav-tab-active">
+        <div class="nav-icon-wrap">📰</div>
+        <span class="nav-label">News</span>
+      </button>
+      <button class="nav-tab">
+        <div class="nav-icon-wrap">📊</div>
+        <span class="nav-label">Stats</span>
+      </button>
+      <button class="nav-tab">
+        <div class="nav-icon-wrap">🤖</div>
+        <span class="nav-label">Help</span>
+      </button>
+    </div>
+  </div><!-- /screen-news -->
+
+</div><!-- /canvas -->
+
+<script>
+function switchScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'))
+  document.getElementById('screen-' + name).classList.add('active')
+}
+</script>
+</body>
+</html>

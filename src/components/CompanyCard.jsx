@@ -3,14 +3,13 @@ import { BADGES, COMPANIES, SECTORS } from '../data/companies.js'
 import { formatMoney, calcLocationsMultiplier } from '../game/engine.js'
 import Sparkline from './Sparkline.jsx'
 
-// Badge visual config for the single-badge system
 const BADGE_STYLE = {
-  safeBet:      { color: '#16A34A', bg: '#F0FDF4', border: '#86EFAC', danger: false },
-  steadyGrower: { color: '#1D4ED8', bg: '#EFF6FF', border: '#93C5FD', danger: false },
-  balanced:     { color: '#D97706', bg: '#FFFBEB', border: '#FCD34D', danger: false },
-  highRisk:     { color: '#DC2626', bg: '#FEF2F2', border: '#FCA5A5', danger: true  },
-  wildCard:     { color: '#DC2626', bg: '#FEF2F2', border: '#FCA5A5', danger: true  },
-  fadingOut:    { color: '#9CA3AF', bg: '#F8FAFC', border: '#E2E8F0', danger: false },
+  safeBet:      { color: '#4ADE80', bg: 'rgba(34,197,94,0.15)',   border: 'rgba(34,197,94,0.3)',   danger: false },
+  steadyGrower: { color: '#818CF8', bg: 'rgba(99,102,241,0.15)', border: 'rgba(99,102,241,0.3)', danger: false },
+  balanced:     { color: '#FCD34D', bg: 'rgba(252,211,77,0.15)', border: 'rgba(252,211,77,0.3)', danger: false },
+  highRisk:     { color: '#FCA5A5', bg: 'rgba(239,68,68,0.15)',  border: 'rgba(239,68,68,0.3)',  danger: true  },
+  wildCard:     { color: '#FCA5A5', bg: 'rgba(239,68,68,0.15)',  border: 'rgba(239,68,68,0.3)',  danger: true  },
+  fadingOut:    { color: 'rgba(255,255,255,0.4)', bg: 'rgba(255,255,255,0.06)', border: 'rgba(255,255,255,0.12)', danger: false },
 }
 
 function ROIHint({ cost, profitPerTurn }) {
@@ -18,10 +17,7 @@ function ROIHint({ cost, profitPerTurn }) {
   const turns = Math.ceil(cost / profitPerTurn)
   if (turns > 200) return null
   return (
-    <div style={{
-      fontSize: 12, fontWeight: 700, color: '#6B7280',
-      marginTop: 4,
-    }}>
+    <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.4)', marginTop: 4 }}>
       💡 Pays back in ~{turns} turn{turns !== 1 ? 's' : ''}
     </div>
   )
@@ -70,23 +66,21 @@ export default function CompanyCard({
 
   const hasHistory = cs.profitHistory && cs.profitHistory.length >= 2
 
-  // Value context banner — explain why value moved
   const sectorCycle = sectorCycles && sectorCycles[co.sector]
   const econState = economy && economy.state
   let contextBanner = null
   if (sectorCycle && sectorCycle.state === 'downturn') {
-    contextBanner = { text: `⚠️ ${sectorData ? sectorData.name : 'Sector'} slump is draining value each turn`, color: '#DC2626', bg: '#FEF2F2', border: '#FCA5A5' }
+    contextBanner = { text: `⚠️ ${sectorData ? sectorData.name : 'Sector'} slump is draining value each turn`, color: '#FCA5A5', bg: 'rgba(239,68,68,0.12)', border: 'rgba(239,68,68,0.25)' }
   } else if (sectorCycle && sectorCycle.state === 'boom') {
-    contextBanner = { text: `🚀 ${sectorData ? sectorData.name : 'Sector'} boom is boosting this company!`, color: '#16A34A', bg: '#F0FDF4', border: '#86EFAC' }
+    contextBanner = { text: `🚀 ${sectorData ? sectorData.name : 'Sector'} boom is boosting this company!`, color: '#4ADE80', bg: 'rgba(34,197,94,0.1)', border: 'rgba(34,197,94,0.25)' }
   } else if (econState === 'slowdown' && co.profSens > 0.5) {
-    contextBanner = { text: '📉 Economy slowdown is pushing this value down', color: '#EF4444', bg: '#FEF2F2', border: '#FCA5A5' }
+    contextBanner = { text: '📉 Economy slowdown is pushing this value down', color: '#FCA5A5', bg: 'rgba(239,68,68,0.1)', border: 'rgba(239,68,68,0.25)' }
   } else if (econState === 'booming' && co.profSens > 0.3) {
-    contextBanner = { text: '🌟 Economic boom is lifting this company!', color: '#16A34A', bg: '#F0FDF4', border: '#86EFAC' }
+    contextBanner = { text: '🌟 Economic boom is lifting this company!', color: '#4ADE80', bg: 'rgba(34,197,94,0.1)', border: 'rgba(34,197,94,0.25)' }
   } else if (co.badge === 'fadingOut') {
-    contextBanner = { text: '📉 This company fades every turn — even in good times', color: '#9CA3AF', bg: '#F8FAFC', border: '#E2E8F0' }
+    contextBanner = { text: '📉 This company fades every turn — even in good times', color: 'rgba(255,255,255,0.4)', bg: 'rgba(255,255,255,0.05)', border: 'rgba(255,255,255,0.1)' }
   }
 
-  // Risk-tier visual config applied to the art panel
   const riskTier = (() => {
     if (co.badge === 'fadingOut') return 'fading'
     if (co.badge === 'wildCard') return 'wild'
@@ -98,7 +92,7 @@ export default function CompanyCard({
   return (
     <div style={{
       position: 'fixed', inset: 0, zIndex: 150,
-      background: riskTier === 'fading' ? '#F1F5F9' : '#EFF6FF',
+      background: '#080D1A',
       display: 'flex', flexDirection: 'column',
       overflowY: 'auto',
     }}>
@@ -108,8 +102,8 @@ export default function CompanyCard({
           100% { transform: translateX(250%) skewX(-15deg) }
         }
         @keyframes wildGlow {
-          0%, 100% { box-shadow: inset 0 0 60px rgba(124,58,237,0.15) }
-          50%       { box-shadow: inset 0 0 80px rgba(239,68,68,0.25) }
+          0%, 100% { box-shadow: inset 0 0 60px rgba(124,58,237,0.20) }
+          50%       { box-shadow: inset 0 0 80px rgba(239,68,68,0.30) }
         }
       `}</style>
 
@@ -117,17 +111,16 @@ export default function CompanyCard({
       <div style={{
         minHeight: 175, flexShrink: 0,
         background: riskTier === 'fading'
-          ? `linear-gradient(150deg, #94A3B820 0%, #CBD5E150 40%, ${co.gradientFrom}60 100%)`
+          ? `linear-gradient(150deg, #1a1f2e 0%, #242938 40%, ${co.gradientFrom}40 100%)`
           : `linear-gradient(150deg, ${co.gradientFrom} 0%, ${co.gradientTo} 100%)`,
         display: 'flex', flexDirection: 'column',
         alignItems: 'center', justifyContent: 'center',
         position: 'relative',
         paddingTop: 'calc(env(safe-area-inset-top, 0px) + 48px)',
         paddingBottom: 24,
-        filter: riskTier === 'fading' ? 'saturate(0.45)' : 'none',
+        filter: riskTier === 'fading' ? 'saturate(0.35)' : 'none',
         animation: riskTier === 'wild' ? 'wildGlow 3s ease-in-out infinite' : 'none',
       }}>
-        {/* Shimmer sweep for wild-card companies */}
         {riskTier === 'wild' && (
           <div style={{
             position: 'absolute', inset: 0, overflow: 'hidden',
@@ -141,18 +134,15 @@ export default function CompanyCard({
           </div>
         )}
 
-        {/* Subtle radial glow behind emoji */}
         <div style={{
           position: 'absolute',
-          width: 160, height: 160,
-          borderRadius: '50%',
+          width: 160, height: 160, borderRadius: '50%',
           background: riskTier === 'safe'
-            ? 'rgba(134,239,172,0.25)'
+            ? 'rgba(74,222,128,0.22)'
             : riskTier === 'high'
-            ? 'rgba(239,68,68,0.20)'
-            : 'rgba(255,255,255,0.15)',
-          filter: 'blur(24px)',
-          pointerEvents: 'none',
+            ? 'rgba(239,68,68,0.18)'
+            : 'rgba(255,255,255,0.12)',
+          filter: 'blur(24px)', pointerEvents: 'none',
         }} />
 
         {/* Back button */}
@@ -162,8 +152,8 @@ export default function CompanyCard({
             position: 'absolute',
             top: 'calc(env(safe-area-inset-top, 0px) + 12px)',
             left: 12,
-            background: 'rgba(0,0,0,0.22)',
-            color: '#fff', border: 'none', borderRadius: 12,
+            background: 'rgba(0,0,0,0.40)',
+            color: '#fff', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 12,
             width: 36, height: 36, fontSize: 16,
             cursor: 'pointer', fontFamily: 'inherit',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -173,14 +163,13 @@ export default function CompanyCard({
           ←
         </button>
 
-        {/* Sector breadcrumb */}
         {sectorName && (
           <div style={{
             position: 'absolute',
             top: 'calc(env(safe-area-inset-top, 0px) + 18px)',
             left: '50%', transform: 'translateX(-50%)',
-            background: 'rgba(0,0,0,0.22)',
-            color: 'rgba(255,255,255,0.9)',
+            background: 'rgba(0,0,0,0.35)',
+            color: 'rgba(255,255,255,0.85)',
             fontSize: 11, fontWeight: 700,
             padding: '3px 12px', borderRadius: 20,
             backdropFilter: 'blur(8px)',
@@ -190,14 +179,11 @@ export default function CompanyCard({
           </div>
         )}
 
-        {/* Cash pill — bottom left */}
         {cash !== undefined && (
           <div style={{
-            position: 'absolute',
-            bottom: 10, left: 12,
-            background: 'rgba(0,0,0,0.30)',
-            color: '#fff',
-            fontSize: 11, fontWeight: 800,
+            position: 'absolute', bottom: 10, left: 12,
+            background: 'rgba(0,0,0,0.40)', color: '#fff',
+            fontSize: 11, fontWeight: 700,
             padding: '3px 10px', borderRadius: 20,
             backdropFilter: 'blur(8px)',
           }}>
@@ -205,13 +191,12 @@ export default function CompanyCard({
           </div>
         )}
 
-        {/* Owned badge */}
         {owned && (
           <div style={{
             position: 'absolute',
             top: 'calc(env(safe-area-inset-top, 0px) + 12px)',
             right: 12,
-            background: '#22C55E', color: '#fff',
+            background: 'rgba(34,197,94,0.85)', color: '#fff',
             padding: '4px 12px', borderRadius: 20,
             fontSize: 11, fontWeight: 900, letterSpacing: '0.05em',
           }}>
@@ -219,23 +204,21 @@ export default function CompanyCard({
           </div>
         )}
 
-        {/* Chip's Pick badge (turn 1, unowned) */}
         {isChipPick && !owned && (
           <div style={{
             position: 'absolute',
             bottom: 10, left: '50%', transform: 'translateX(-50%)',
-            background: 'linear-gradient(135deg, #1D4ED8, #7C3AED)',
+            background: 'linear-gradient(135deg, #4338CA, #7C3AED)',
             color: '#fff',
             padding: '5px 14px', borderRadius: 20,
-            fontSize: 12, fontWeight: 900, letterSpacing: '0.04em',
-            boxShadow: '0 3px 10px rgba(29,78,216,0.5)',
+            fontSize: 12, fontWeight: 800, letterSpacing: '0.04em',
+            boxShadow: '0 3px 14px rgba(99,102,241,0.5)',
             whiteSpace: 'nowrap',
           }}>
             🤖 Chip's Pick for Beginners
           </div>
         )}
 
-        {/* Flash Sale badge */}
         {isOnFlashSale && (
           <div style={{
             position: 'absolute',
@@ -245,17 +228,16 @@ export default function CompanyCard({
             color: '#fff',
             padding: '4px 12px', borderRadius: 20,
             fontSize: 11, fontWeight: 900, letterSpacing: '0.05em',
-            boxShadow: '0 2px 8px rgba(217,119,6,0.5)',
+            boxShadow: '0 2px 10px rgba(217,119,6,0.5)',
           }}>
             ⚡ {Math.round(flashDiscount * 100)}% OFF · {flashSale.turnsLeft} turn{flashSale.turnsLeft !== 1 ? 's' : ''} left
           </div>
         )}
 
-        {/* Action taken badge */}
         {actionTaken && !owned && (
           <div style={{
             position: 'absolute', bottom: 10, right: 10,
-            background: 'rgba(0,0,0,0.35)', color: '#fff',
+            background: 'rgba(0,0,0,0.45)', color: 'rgba(255,255,255,0.8)',
             padding: '3px 10px', borderRadius: 20,
             fontSize: 11, fontWeight: 700,
             backdropFilter: 'blur(8px)',
@@ -264,18 +246,17 @@ export default function CompanyCard({
           </div>
         )}
 
-        {/* Company emoji with glow ring */}
         <div style={{
           fontSize: 72,
           filter: riskTier === 'safe'
-            ? 'drop-shadow(0 6px 20px rgba(0,0,0,0.20)) drop-shadow(0 0 18px rgba(134,239,172,0.6))'
+            ? 'drop-shadow(0 6px 20px rgba(0,0,0,0.30)) drop-shadow(0 0 18px rgba(74,222,128,0.6))'
             : riskTier === 'high'
-            ? 'drop-shadow(0 6px 20px rgba(0,0,0,0.30)) drop-shadow(0 0 22px rgba(239,68,68,0.55))'
+            ? 'drop-shadow(0 6px 20px rgba(0,0,0,0.40)) drop-shadow(0 0 22px rgba(239,68,68,0.55))'
             : riskTier === 'wild'
-            ? 'drop-shadow(0 6px 20px rgba(0,0,0,0.30)) drop-shadow(0 0 28px rgba(124,58,237,0.60))'
+            ? 'drop-shadow(0 6px 20px rgba(0,0,0,0.40)) drop-shadow(0 0 28px rgba(124,58,237,0.60))'
             : riskTier === 'fading'
-            ? 'drop-shadow(0 4px 10px rgba(0,0,0,0.15)) grayscale(0.6)'
-            : 'drop-shadow(0 6px 20px rgba(0,0,0,0.25))',
+            ? 'drop-shadow(0 4px 10px rgba(0,0,0,0.30)) grayscale(0.6)'
+            : 'drop-shadow(0 6px 20px rgba(0,0,0,0.35))',
           lineHeight: 1,
           position: 'relative', zIndex: 1,
         }}>
@@ -283,36 +264,35 @@ export default function CompanyCard({
         </div>
         <div style={{
           fontSize: 24, fontWeight: 900, color: '#fff',
-          marginTop: 10, textShadow: '0 2px 10px rgba(0,0,0,0.25)',
+          marginTop: 10, textShadow: '0 2px 10px rgba(0,0,0,0.4)',
           position: 'relative', zIndex: 1,
         }}>
           {co.name}
         </div>
         <div style={{
-          fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.75)',
-          background: 'rgba(0,0,0,0.18)',
+          fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.7)',
+          background: 'rgba(0,0,0,0.30)',
           padding: '3px 12px', borderRadius: 20, marginTop: 6,
           backdropFilter: 'blur(8px)',
         }}>
           {sectorLabel}
         </div>
 
-        {/* Risk tier strip */}
         {riskTier !== 'normal' && (
           <div style={{
             marginTop: 8,
             padding: '3px 14px', borderRadius: 20,
-            fontSize: 11, fontWeight: 900, letterSpacing: '0.05em',
+            fontSize: 11, fontWeight: 800, letterSpacing: '0.05em',
             backdropFilter: 'blur(8px)',
-            background: riskTier === 'safe'  ? 'rgba(134,239,172,0.30)'
-                      : riskTier === 'high'  ? 'rgba(239,68,68,0.35)'
-                      : riskTier === 'wild'  ? 'rgba(124,58,237,0.40)'
-                      : 'rgba(0,0,0,0.20)',
-            color: riskTier === 'fading' ? 'rgba(255,255,255,0.50)' : '#fff',
-            border: riskTier === 'safe'  ? '1px solid rgba(134,239,172,0.5)'
-                  : riskTier === 'high'  ? '1px solid rgba(239,68,68,0.5)'
-                  : riskTier === 'wild'  ? '1px solid rgba(167,139,250,0.5)'
-                  : '1px solid rgba(255,255,255,0.15)',
+            background: riskTier === 'safe'  ? 'rgba(74,222,128,0.28)'
+                      : riskTier === 'high'  ? 'rgba(239,68,68,0.32)'
+                      : riskTier === 'wild'  ? 'rgba(124,58,237,0.38)'
+                      : 'rgba(0,0,0,0.30)',
+            color: riskTier === 'fading' ? 'rgba(255,255,255,0.45)' : '#fff',
+            border: riskTier === 'safe'  ? '1px solid rgba(74,222,128,0.45)'
+                  : riskTier === 'high'  ? '1px solid rgba(239,68,68,0.45)'
+                  : riskTier === 'wild'  ? '1px solid rgba(167,139,250,0.45)'
+                  : '1px solid rgba(255,255,255,0.12)',
           }}>
             {riskTier === 'safe'   ? '🛡️ Defensive'
            : riskTier === 'high'  ? '🔥 Cyclical'
@@ -323,17 +303,17 @@ export default function CompanyCard({
       </div>
 
       {/* Card Body */}
-      <div style={{ flex: 1, padding: '16px 16px 130px' }}>
+      <div style={{ flex: 1, padding: '16px 16px 130px', background: '#080D1A' }}>
 
         {/* Badge + News Effect */}
         <div style={{ marginBottom: 16 }}>
-          <div style={{ fontSize: 11, fontWeight: 800, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
             Company Profile
           </div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
             {(() => {
               const badge = BADGES[co.badge]
-              const style = BADGE_STYLE[co.badge] || { color: '#6B7280', bg: '#F8FAFC', border: '#E2E8F0', danger: false }
+              const style = BADGE_STYLE[co.badge] || { color: 'rgba(255,255,255,0.4)', bg: 'rgba(255,255,255,0.06)', border: 'rgba(255,255,255,0.12)', danger: false }
               return (
                 <button
                   onClick={() => onBadgeTap && onBadgeTap(co.badge)}
@@ -342,42 +322,42 @@ export default function CompanyCard({
                     background: style.bg,
                     border: `1.5px solid ${style.border}`,
                     borderRadius: 20,
-                    fontSize: 13, fontWeight: 800,
+                    fontSize: 13, fontWeight: 700,
                     color: style.color,
                     cursor: 'pointer', fontFamily: 'inherit',
                     display: 'flex', alignItems: 'center', gap: 4,
                   }}
                 >
                   {badge ? badge.label : co.badge}
-                  {style.danger && <span style={{ fontSize: 10, fontWeight: 900, color: '#EF4444' }}>!</span>}
+                  {style.danger && <span style={{ fontSize: 10, fontWeight: 900, color: '#FCA5A5' }}>!</span>}
                 </button>
               )
             })()}
-            {/* News effect badge */}
             {companyNewsEffects && companyNewsEffects[companyId] !== undefined && (
               <div style={{
                 padding: '5px 11px', borderRadius: 20,
-                fontSize: 13, fontWeight: 800,
-                color: companyNewsEffects[companyId] > 0 ? '#16A34A' : '#DC2626',
-                background: companyNewsEffects[companyId] > 0 ? '#F0FDF4' : '#FEF2F2',
-                border: `1.5px solid ${companyNewsEffects[companyId] > 0 ? '#86EFAC' : '#FCA5A5'}`,
+                fontSize: 13, fontWeight: 700,
+                color: companyNewsEffects[companyId] > 0 ? '#4ADE80' : '#FCA5A5',
+                background: companyNewsEffects[companyId] > 0 ? 'rgba(34,197,94,0.12)' : 'rgba(239,68,68,0.12)',
+                border: `1.5px solid ${companyNewsEffects[companyId] > 0 ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)'}`,
               }}>
                 {companyNewsEffects[companyId] > 0 ? '📰 +6% next turn' : '📰 −6% next turn'}
               </div>
             )}
           </div>
-          <div style={{ fontSize: 11, color: '#9CA3AF', fontWeight: 600, marginTop: 6 }}>
+          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', fontWeight: 600, marginTop: 6 }}>
             Tap badge to learn what it means
           </div>
         </div>
 
-        {/* Guide tip: step 1 "Tap Buy to own it!" */}
+        {/* Guide tip */}
         {chipGuideStep === 1 && !owned && (
           <div style={{
-            background: 'linear-gradient(135deg, #1D4ED8, #7C3AED)',
+            background: 'linear-gradient(135deg, #4338CA, #7C3AED)',
             borderRadius: 14, padding: '12px 14px',
             marginBottom: 14,
             display: 'flex', alignItems: 'center', gap: 10,
+            boxShadow: '0 4px 18px rgba(99,102,241,0.35)',
           }}>
             <span style={{ fontSize: 26 }}>🤖</span>
             <div>
@@ -392,32 +372,32 @@ export default function CompanyCard({
         {/* Flash Sale Banner */}
         {isOnFlashSale && (
           <div style={{
-            background: 'linear-gradient(135deg, #FFFBEB, #FEF3C7)',
-            border: '2px solid #FCD34D',
+            background: 'rgba(252,211,77,0.08)',
+            border: '2px solid rgba(252,211,77,0.35)',
             borderRadius: 14, padding: '14px 16px',
             marginBottom: 14,
-            boxShadow: '0 4px 16px rgba(252,211,77,0.35)',
+            boxShadow: '0 4px 20px rgba(252,211,77,0.15)',
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-              <div style={{ fontSize: 14, fontWeight: 900, color: '#92400E' }}>⚡ Flash Sale!</div>
-              <div style={{ fontSize: 11, fontWeight: 800, color: '#B45309', background: '#FEF3C7', padding: '2px 8px', borderRadius: 20, border: '1px solid #FCD34D' }}>
+              <div style={{ fontSize: 14, fontWeight: 800, color: '#FCD34D' }}>⚡ Flash Sale!</div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#FCD34D', background: 'rgba(252,211,77,0.15)', padding: '2px 8px', borderRadius: 20, border: '1px solid rgba(252,211,77,0.3)' }}>
                 {flashSale.turnsLeft} turn{flashSale.turnsLeft !== 1 ? 's' : ''} left
               </div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div style={{ fontSize: 22, fontWeight: 900, color: '#16A34A' }}>{formatMoney(value)}</div>
-              <div style={{ fontSize: 15, fontWeight: 700, color: '#9CA3AF', textDecoration: 'line-through' }}>{formatMoney(baseValue)}</div>
-              <div style={{ fontSize: 13, fontWeight: 800, color: '#DC2626', background: '#FEE2E2', padding: '2px 8px', borderRadius: 10 }}>
+              <div style={{ fontSize: 22, fontWeight: 900, color: '#4ADE80' }}>{formatMoney(value)}</div>
+              <div style={{ fontSize: 15, fontWeight: 600, color: 'rgba(255,255,255,0.35)', textDecoration: 'line-through' }}>{formatMoney(baseValue)}</div>
+              <div style={{ fontSize: 13, fontWeight: 800, color: '#FCA5A5', background: 'rgba(239,68,68,0.15)', padding: '2px 8px', borderRadius: 10 }}>
                 -{Math.round(flashDiscount * 100)}%
               </div>
             </div>
-            <div style={{ fontSize: 12, fontWeight: 600, color: '#92400E', marginTop: 6 }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(252,211,77,0.7)', marginTop: 6 }}>
               You save {formatMoney(baseValue - value)} — don't miss this deal!
             </div>
           </div>
         )}
 
-        {/* Value context banner */}
+        {/* Context banner */}
         {contextBanner && (
           <div style={{
             background: contextBanner.bg,
@@ -433,99 +413,98 @@ export default function CompanyCard({
 
         {/* About */}
         <div style={{
-          background: '#fff',
+          background: 'rgba(255,255,255,0.04)',
           borderRadius: 14,
           borderLeft: `4px solid ${co.gradientTo}`,
           padding: '12px 14px',
           marginBottom: 14,
-          boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+          border: '1px solid rgba(255,255,255,0.07)',
+          borderLeftWidth: 4,
+          borderLeftColor: co.gradientTo,
         }}>
-          <p style={{ fontSize: 14, color: '#374151', lineHeight: 1.6, fontWeight: 500 }}>
+          <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.65)', lineHeight: 1.6, fontWeight: 500, margin: 0 }}>
             {co.about}
           </p>
         </div>
 
         {/* Stats row */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
-          {/* Profit tile */}
           <div style={{
-            background: 'linear-gradient(135deg, #F0FDF4, #DCFCE7)',
-            border: '1.5px solid #86EFAC',
+            background: 'rgba(34,197,94,0.1)',
+            border: '1.5px solid rgba(34,197,94,0.25)',
             borderRadius: 14, padding: '13px 14px',
           }}>
             <button
               onClick={() => onTermTap && onTermTap('earnings')}
               style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left' }}
             >
-              <div style={{ fontSize: 10, fontWeight: 800, color: '#16A34A', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2, borderBottom: '1px dashed #86EFAC' }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: '#4ADE80', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2, borderBottom: '1px dashed rgba(74,222,128,0.3)', paddingBottom: 2 }}>
                 Earnings/Turn{owned && owned.locations > 1 ? ` (×${owned.locations})` : ''}
               </div>
             </button>
-            <div style={{ fontSize: 24, fontWeight: 900, color: '#15803D' }}>
+            <div style={{ fontSize: 24, fontWeight: 900, color: '#4ADE80' }}>
               {formatMoney(owned ? effectiveProfit : cs.profit)}
             </div>
-            {!owned && (
-              <ROIHint cost={value} profitPerTurn={cs.profit} />
-            )}
+            {!owned && <ROIHint cost={value} profitPerTurn={cs.profit} />}
           </div>
 
-          {/* Value tile */}
           <div style={{
-            background: 'linear-gradient(135deg, #EFF6FF, #DBEAFE)',
-            border: '1.5px solid #93C5FD',
+            background: 'rgba(99,102,241,0.1)',
+            border: '1.5px solid rgba(99,102,241,0.25)',
             borderRadius: 14, padding: '13px 14px',
           }}>
-            <div style={{ fontSize: 10, fontWeight: 800, color: '#1D4ED8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: '#818CF8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>
               Value
             </div>
-            <div style={{ fontSize: 24, fontWeight: 900, color: '#1E40AF' }}>
+            <div style={{ fontSize: 24, fontWeight: 900, color: '#818CF8' }}>
               {formatMoney(value)}
             </div>
           </div>
         </div>
 
-        {/* P/E Ratio golden tile */}
+        {/* P/E Ratio tile */}
         <div style={{
-          background: 'linear-gradient(135deg, #FFFBEB, #FEF3C7)',
-          border: '2px solid #FCD34D',
+          background: 'rgba(252,211,77,0.08)',
+          border: '2px solid rgba(252,211,77,0.25)',
           borderRadius: 14, padding: '13px 16px',
           marginBottom: 14,
-          boxShadow: '0 2px 8px rgba(252,211,77,0.3)',
+          boxShadow: '0 2px 12px rgba(252,211,77,0.10)',
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
             <button
               onClick={() => onTermTap && onTermTap('pe_ratio')}
               style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left' }}
             >
-              <div style={{ fontSize: 10, fontWeight: 800, color: '#92400E', textTransform: 'uppercase', letterSpacing: '0.06em', borderBottom: '1px dashed #D97706' }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: '#FCD34D', textTransform: 'uppercase', letterSpacing: '0.06em', borderBottom: '1px dashed rgba(252,211,77,0.35)', paddingBottom: 2 }}>
                 P/E Ratio ⓘ
               </div>
             </button>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{ fontSize: 28, fontWeight: 900, color: '#78350F' }}>
+            <span style={{ fontSize: 28, fontWeight: 900, color: '#FCD34D' }}>
               {cs.multiplier.toFixed(1)}×
             </span>
             <div>
-              <div style={{ fontSize: 13, color: '#92400E', fontWeight: 700 }}>
+              <div style={{ fontSize: 13, color: 'rgba(252,211,77,0.85)', fontWeight: 700 }}>
                 Investors pay {cs.multiplier.toFixed(1)}× per $1 of earnings
               </div>
-              <div style={{ fontSize: 11, color: '#A16207', fontWeight: 600, marginTop: 1 }}>
+              <div style={{ fontSize: 11, color: 'rgba(252,211,77,0.55)', fontWeight: 600, marginTop: 1 }}>
                 {formatMoney(Math.round(cs.profit))} earnings × {cs.multiplier.toFixed(1)} = {formatMoney(value)}
               </div>
             </div>
           </div>
         </div>
 
-        {/* Profit history + stability */}
+        {/* Profit history */}
         <div style={{
-          background: '#fff', borderRadius: 14, padding: '13px 14px',
+          background: 'rgba(255,255,255,0.04)',
+          border: '1px solid rgba(255,255,255,0.08)',
+          borderRadius: 14, padding: '13px 14px',
           marginBottom: 14,
-          boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
           display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end',
         }}>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 10, fontWeight: 800, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>
               Profit History
             </div>
             {hasHistory ? (
@@ -533,8 +512,7 @@ export default function CompanyCard({
             ) : (
               <div style={{
                 height: 44, display: 'flex', alignItems: 'center',
-                fontSize: 12, color: '#9CA3AF', fontWeight: 600,
-                fontStyle: 'italic',
+                fontSize: 12, color: 'rgba(255,255,255,0.3)', fontWeight: 600, fontStyle: 'italic',
               }}>
                 Chart fills in as you play
               </div>
@@ -545,31 +523,30 @@ export default function CompanyCard({
               onClick={() => onTermTap && onTermTap('volatility')}
               style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit', textAlign: 'right', marginBottom: 8 }}
             >
-              <div style={{ fontSize: 10, fontWeight: 800, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.06em', borderBottom: '1px dashed #CBD5E1' }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.06em', borderBottom: '1px dashed rgba(255,255,255,0.15)', paddingBottom: 2 }}>
                 Volatility ⓘ
               </div>
             </button>
             <StabilityDots profSens={co.profSens} />
-            <div style={{ fontSize: 10, color: '#9CA3AF', fontWeight: 600, marginTop: 4 }}>
+            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', fontWeight: 600, marginTop: 4 }}>
               {co.profSens <= 0.25 ? 'Very Low' : co.profSens <= 0.50 ? 'Low' : co.profSens <= 0.90 ? 'Medium' : co.profSens <= 1.20 ? 'High' : 'Very High'}
             </div>
           </div>
         </div>
 
-        {/* 'See full details' link (owned only) */}
+        {/* See full details */}
         {owned && onViewDetails && (
           <button
             onClick={onViewDetails}
             style={{
               width: '100%', padding: '12px',
-              background: '#fff',
-              border: '1.5px solid #E2E8F0',
+              background: 'rgba(255,255,255,0.05)',
+              border: '1.5px solid rgba(255,255,255,0.1)',
               borderRadius: 12,
-              fontSize: 14, fontWeight: 800,
-              color: '#1D4ED8', cursor: 'pointer',
+              fontSize: 14, fontWeight: 700,
+              color: '#818CF8', cursor: 'pointer',
               fontFamily: 'inherit', marginBottom: 12,
               display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-              boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
             }}
           >
             <span>📊 See my investment details</span>
@@ -587,16 +564,17 @@ export default function CompanyCard({
                 style={{
                   width: '100%', padding: '15px',
                   background: actionTaken
-                    ? '#E5E7EB'
+                    ? 'rgba(255,255,255,0.08)'
                     : !canAfford
-                    ? 'linear-gradient(135deg, #94A3B8, #CBD5E1)'
+                    ? 'rgba(148,163,184,0.2)'
                     : 'linear-gradient(135deg, #16A34A, #22C55E)',
-                  color: (actionTaken || !canAfford) ? '#fff' : '#fff',
-                  border: 'none', borderRadius: 14,
+                  color: (actionTaken || !canAfford) ? 'rgba(255,255,255,0.4)' : '#fff',
+                  border: (actionTaken || !canAfford) ? '1px solid rgba(255,255,255,0.1)' : 'none',
+                  borderRadius: 14,
                   fontSize: 15, fontWeight: 900,
                   fontFamily: 'inherit',
                   cursor: (actionTaken || !canAfford) ? 'default' : 'pointer',
-                  boxShadow: (actionTaken || !canAfford) ? 'none' : '0 4px 14px rgba(34,197,94,0.4)',
+                  boxShadow: (actionTaken || !canAfford) ? 'none' : '0 4px 18px rgba(34,197,94,0.4)',
                 }}
               >
                 {actionTaken
@@ -606,7 +584,7 @@ export default function CompanyCard({
                   : `Buy · ${formatMoney(value)}`}
               </button>
               {!canAfford && !actionTaken && (
-                <div style={{ fontSize: 11, fontWeight: 700, color: '#94A3B8', textAlign: 'center', marginTop: 5 }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.3)', textAlign: 'center', marginTop: 5 }}>
                   You have {formatMoney(cash)} · need {formatMoney(value)}
                 </div>
               )}
@@ -620,9 +598,10 @@ export default function CompanyCard({
                 disabled={!!actionTaken}
                 style={{
                   flex: 1, padding: '15px',
-                  background: actionTaken ? '#E5E7EB' : 'linear-gradient(135deg, #DC2626, #EF4444)',
-                  color: actionTaken ? '#9CA3AF' : '#fff',
-                  border: 'none', borderRadius: 14,
+                  background: actionTaken ? 'rgba(255,255,255,0.08)' : 'linear-gradient(135deg, #DC2626, #EF4444)',
+                  color: actionTaken ? 'rgba(255,255,255,0.35)' : '#fff',
+                  border: actionTaken ? '1px solid rgba(255,255,255,0.1)' : 'none',
+                  borderRadius: 14,
                   fontSize: 15, fontWeight: 900,
                   fontFamily: 'inherit', cursor: actionTaken ? 'default' : 'pointer',
                   boxShadow: actionTaken ? 'none' : '0 4px 14px rgba(239,68,68,0.35)',
@@ -642,13 +621,14 @@ export default function CompanyCard({
                       style={{
                         width: '100%', padding: '15px',
                         background: disabled
-                          ? (actionTaken ? '#E5E7EB' : 'linear-gradient(135deg, #94A3B8, #CBD5E1)')
-                          : 'linear-gradient(135deg, #1D4ED8, #7C3AED)',
-                        color: disabled ? '#9CA3AF' : '#fff',
-                        border: 'none', borderRadius: 14,
+                          ? 'rgba(255,255,255,0.06)'
+                          : 'linear-gradient(135deg, #4338CA, #7C3AED)',
+                        color: disabled ? 'rgba(255,255,255,0.3)' : '#fff',
+                        border: disabled ? '1px solid rgba(255,255,255,0.08)' : 'none',
+                        borderRadius: 14,
                         fontSize: 14, fontWeight: 900,
                         fontFamily: 'inherit', cursor: disabled ? 'default' : 'pointer',
-                        boxShadow: disabled ? 'none' : '0 4px 14px rgba(29,78,216,0.35)',
+                        boxShadow: disabled ? 'none' : '0 4px 14px rgba(99,102,241,0.4)',
                       }}
                     >
                       {actionTaken ? '✓ Done' : !canAffordLoc ? `Need ${formatMoney(locCost - (cash || 0))} more` : '+ Open Location'}
@@ -665,22 +645,21 @@ export default function CompanyCard({
 }
 
 function StabilityDots({ profSens }) {
-  // More dots = more stable. Low profSens = stable = 5 dots. High profSens = volatile = 1 dot.
   let dots
-  if (profSens <= 0.25)      dots = 5   // Very Stable
-  else if (profSens <= 0.50) dots = 4   // Stable
-  else if (profSens <= 0.90) dots = 3   // Moderate
-  else if (profSens <= 1.20) dots = 2   // Risky
-  else                       dots = 1   // Volatile
+  if (profSens <= 0.25)      dots = 5
+  else if (profSens <= 0.50) dots = 4
+  else if (profSens <= 0.90) dots = 3
+  else if (profSens <= 1.20) dots = 2
+  else                       dots = 1
 
-  const dotColor = dots >= 4 ? '#22C55E' : dots === 3 ? '#EAB308' : '#EF4444'
+  const dotColor = dots >= 4 ? '#4ADE80' : dots === 3 ? '#FCD34D' : '#FCA5A5'
 
   return (
     <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
       {[1,2,3,4,5].map(i => (
         <div key={i} style={{
           width: 11, height: 11, borderRadius: '50%',
-          background: i <= dots ? dotColor : '#E5E7EB',
+          background: i <= dots ? dotColor : 'rgba(255,255,255,0.1)',
           boxShadow: i <= dots ? `0 0 6px ${dotColor}80` : 'none',
         }} />
       ))}

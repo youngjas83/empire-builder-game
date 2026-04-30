@@ -13,19 +13,15 @@ function calcReportCard(state, netWorth, profitPerTurn) {
   const ownedIds = Object.keys(portfolio)
   if (ownedIds.length === 0) return null
 
-  // 1. Growth: MOIC vs $10M starting capital (0–25)
   const moic = netWorth / START_CAPITAL
   const growthScore = moic >= 25 ? 25 : moic >= 10 ? 21 : moic >= 5 ? 17 : moic >= 2 ? 12 : moic >= 1.5 ? 8 : Math.max(0, Math.round((moic - 1) * 14))
 
-  // 2. Diversification: sectors covered (0–25)
   const sectors = new Set(ownedIds.map(id => COMPANIES.find(c => c.id === id)?.sector).filter(Boolean))
   const diversScore = sectors.size >= 4 ? 25 : sectors.size === 3 ? 20 : sectors.size === 2 ? 13 : 5
 
-  // 3. Profit Rate: profit/turn as % of empire value (0–25)
   const effPct = netWorth > 0 ? (profitPerTurn / netWorth) * 100 : 0
   const effScore = effPct >= 8 ? 25 : effPct >= 6 ? 21 : effPct >= 4 ? 17 : effPct >= 2 ? 10 : Math.max(0, Math.round(effPct * 3))
 
-  // 4. Risk Balance (0–25)
   const inDownturn = ownedIds.filter(id => {
     const co = COMPANIES.find(c => c.id === id)
     return co && sectorCycles[co.sector]?.state === 'downturn'
@@ -48,10 +44,8 @@ function calcReportCard(state, netWorth, profitPerTurn) {
   const total = growthScore + diversScore + effScore + riskScore
   const grade = total >= 80 ? 'A' : total >= 60 ? 'B' : total >= 40 ? 'C' : total >= 20 ? 'D' : 'F'
   const gradeLabels = { A: 'Empire Mogul 🌟', B: 'Smart Investor', C: 'Getting There', D: 'Needs Work', F: 'Just Starting' }
-  const gradeColors = { A: '#16A34A', B: '#1D4ED8', C: '#D97706', D: '#DC2626', F: '#9CA3AF' }
-  const gradeBg    = { A: 'linear-gradient(135deg,#F0FDF4,#DCFCE7)', B: 'linear-gradient(135deg,#EFF6FF,#DBEAFE)', C: 'linear-gradient(135deg,#FFFBEB,#FEF3C7)', D: 'linear-gradient(135deg,#FEF2F2,#FEE2E2)', F: '#F8FAFC' }
+  const gradeColors = { A: '#4ADE80', B: '#818CF8', C: '#FCD34D', D: '#FCA5A5', F: 'rgba(255,255,255,0.35)' }
 
-  // Chip explanations per category
   const moicStr = moic.toFixed(1)
   const growthChip = growthScore >= 21
     ? `Your empire is ${moicStr}× your starting capital — that's elite-level compounding!`
@@ -81,32 +75,11 @@ function calcReportCard(state, netWorth, profitPerTurn) {
     grade, total,
     label: gradeLabels[grade],
     color: gradeColors[grade],
-    bg: gradeBg[grade],
     breakdown: [
-      {
-        id: 'growth', label: 'Growth', score: growthScore, max: 25,
-        tip: growthScore >= 17 ? '🟢 Strong' : growthScore >= 8 ? '🟡 Decent' : '🔴 Weak',
-        formula: 'How many times you\'ve multiplied your starting $10M.',
-        chipText: growthChip,
-      },
-      {
-        id: 'divers', label: 'Diversification', score: diversScore, max: 25,
-        tip: diversScore >= 20 ? '🟢 Strong' : diversScore >= 13 ? '🟡 Decent' : '🔴 Weak',
-        formula: 'Number of different sectors you own companies in.',
-        chipText: diversChip,
-      },
-      {
-        id: 'profit', label: 'Profit Rate', score: effScore, max: 25,
-        tip: effScore >= 17 ? '🟢 Strong' : effScore >= 10 ? '🟡 Decent' : '🔴 Weak',
-        formula: 'Profit per turn ÷ empire value. A higher % means your empire earns more per dollar.',
-        chipText: effChip,
-      },
-      {
-        id: 'risk', label: 'Risk Balance', score: riskScore, max: 25,
-        tip: riskScore >= 20 ? '🟢 Strong' : riskScore >= 15 ? '🟡 Decent' : '🔴 Weak',
-        formula: 'Checks for anchor companies, cross-sector diversification, and no active downturn exposure.',
-        chipText: riskChip,
-      },
+      { id: 'growth', label: 'Growth',          score: growthScore, max: 25, tip: growthScore >= 17 ? '🟢 Strong' : growthScore >= 8 ? '🟡 Decent' : '🔴 Weak', formula: 'How many times you\'ve multiplied your starting $10M.', chipText: growthChip },
+      { id: 'divers', label: 'Diversification', score: diversScore, max: 25, tip: diversScore >= 20 ? '🟢 Strong' : diversScore >= 13 ? '🟡 Decent' : '🔴 Weak', formula: 'Number of different sectors you own companies in.', chipText: diversChip },
+      { id: 'profit', label: 'Profit Rate',     score: effScore,   max: 25, tip: effScore >= 17 ? '🟢 Strong' : effScore >= 10 ? '🟡 Decent' : '🔴 Weak', formula: 'Profit per turn ÷ empire value. A higher % means your empire earns more per dollar.', chipText: effChip },
+      { id: 'risk',   label: 'Risk Balance',    score: riskScore,  max: 25, tip: riskScore >= 20 ? '🟢 Strong' : riskScore >= 15 ? '🟡 Decent' : '🔴 Weak', formula: 'Checks for anchor companies, cross-sector diversification, and no active downturn exposure.', chipText: riskChip },
     ],
   }
 }
@@ -160,35 +133,35 @@ export default function EmpireTab({
 
       {/* ── Header ── */}
       <div style={{
-        background: 'linear-gradient(150deg, #1D4ED8 0%, #4338CA 55%, #6D28D9 100%)',
+        background: 'linear-gradient(150deg, #0F1A3D 0%, #1a1560 55%, #2D1B69 100%)',
         paddingTop: 'calc(env(safe-area-inset-top, 0px) + 14px)',
         paddingBottom: 20, paddingLeft: 16, paddingRight: 16,
         position: 'relative', overflow: 'hidden',
+        borderBottom: '1px solid rgba(255,255,255,0.07)',
       }}>
-        {/* Radial glow accent */}
         <div style={{
           position: 'absolute', top: -40, right: -40,
           width: 220, height: 220, borderRadius: '50%',
-          background: 'rgba(255,255,255,0.07)',
+          background: 'rgba(99,102,241,0.15)',
           filter: 'blur(50px)', pointerEvents: 'none',
         }} />
         <div style={{
           position: 'absolute', bottom: -60, left: -20,
           width: 160, height: 160, borderRadius: '50%',
-          background: 'rgba(124,58,237,0.25)',
+          background: 'rgba(124,58,237,0.18)',
           filter: 'blur(40px)', pointerEvents: 'none',
         }} />
 
-        {/* Top row: empire name + turn counter */}
+        {/* Top row */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, position: 'relative' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 17, fontWeight: 900, color: '#fff', letterSpacing: '-0.3px' }}>
+            <span style={{ fontSize: 17, fontWeight: 700, color: '#E2E8F0', letterSpacing: '-0.3px' }}>
               🏙️ {empireName}
             </span>
             <button
               onClick={onEditName}
               style={{
-                background: 'rgba(255,255,255,0.18)', border: 'none',
+                background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.12)',
                 color: '#fff', borderRadius: 8,
                 width: 28, height: 28, fontSize: 13,
                 cursor: 'pointer', fontFamily: 'inherit',
@@ -200,10 +173,10 @@ export default function EmpireTab({
             </button>
           </div>
           <div style={{
-            background: 'rgba(255,255,255,0.14)',
-            border: '1px solid rgba(255,255,255,0.2)',
+            background: 'rgba(255,255,255,0.08)',
+            border: '1px solid rgba(255,255,255,0.12)',
             borderRadius: 20, padding: '4px 12px',
-            fontSize: 12, fontWeight: 800, color: 'rgba(255,255,255,0.9)',
+            fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.7)',
           }}>
             Turn {turn}
           </div>
@@ -211,13 +184,13 @@ export default function EmpireTab({
 
         {/* Net Worth */}
         <div style={{ position: 'relative' }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.55)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 3 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 3 }}>
             Empire Value
           </div>
           <div style={{
             fontSize: 38, fontWeight: 900, color: '#FCD34D',
             letterSpacing: '-1px', lineHeight: 1,
-            textShadow: '0 2px 20px rgba(252,211,77,0.5)',
+            textShadow: '0 2px 24px rgba(252,211,77,0.45)',
             marginBottom: 14,
           }}>
             {formatMoney(netWorth)}
@@ -226,40 +199,35 @@ export default function EmpireTab({
 
         {/* Pills row */}
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', position: 'relative' }}>
-          {/* Economy pill — tappable */}
           <button
             onClick={onEconomyPillTap}
             style={{
-              background: econColor + '30',
-              border: `1.5px solid ${econColor}70`,
+              background: econColor + '25',
+              border: `1.5px solid ${econColor}55`,
               borderRadius: 20, padding: '5px 12px',
-              fontSize: 12, fontWeight: 800, color: '#fff',
+              fontSize: 12, fontWeight: 700, color: '#fff',
               cursor: 'pointer', fontFamily: 'inherit',
               backdropFilter: 'blur(8px)',
               display: 'flex', alignItems: 'center', gap: 4,
             }}
           >
             {getEconomyLabel(economy.state)}
-            <span style={{ fontSize: 10, opacity: 0.7 }}>ⓘ</span>
+            <span style={{ fontSize: 10, opacity: 0.6 }}>ⓘ</span>
           </button>
-
-          {/* Cash pill */}
           <div style={{
-            background: 'rgba(255,255,255,0.14)',
-            border: '1px solid rgba(255,255,255,0.2)',
+            background: 'rgba(255,255,255,0.08)',
+            border: '1px solid rgba(255,255,255,0.12)',
             borderRadius: 20, padding: '5px 12px',
-            fontSize: 12, fontWeight: 800, color: '#fff',
+            fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.8)',
           }}>
             💵 {formatMoney(cash)}
           </div>
-
-          {/* Profit pill — only if earning */}
           {profitPerTurn > 0 && (
             <div style={{
-              background: 'rgba(34,197,94,0.22)',
-              border: '1.5px solid rgba(34,197,94,0.45)',
+              background: 'rgba(74,222,128,0.15)',
+              border: '1.5px solid rgba(74,222,128,0.3)',
               borderRadius: 20, padding: '5px 12px',
-              fontSize: 12, fontWeight: 800, color: '#86EFAC',
+              fontSize: 12, fontWeight: 700, color: '#4ADE80',
             }}>
               +{formatMoney(profitPerTurn)}/turn
             </div>
@@ -272,32 +240,32 @@ export default function EmpireTab({
         onClick={onShowLevelSheet}
         style={{
           width: '100%', padding: '10px 16px',
-          background: '#fff',
-          borderBottom: '1px solid #E2E8F0',
+          background: 'rgba(255,255,255,0.03)',
+          borderBottom: '1px solid rgba(255,255,255,0.07)',
           cursor: 'pointer', border: 'none', fontFamily: 'inherit',
           textAlign: 'left',
         }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 7 }}>
-          <span style={{ fontSize: 12, fontWeight: 800, color: '#1D4ED8' }}>
+          <span style={{ fontSize: 12, fontWeight: 700, color: '#818CF8' }}>
             L{level} · {currentLevelData.name}
           </span>
           {nextLevelData ? (
-            <span style={{ fontSize: 11, fontWeight: 600, color: '#9CA3AF' }}>
+            <span style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.35)' }}>
               {formatMoney(nextLevelData.requirement)} to L{level + 1}
             </span>
           ) : (
             <span style={{ fontSize: 11, fontWeight: 700, color: '#FCD34D' }}>🏆 MAX LEVEL!</span>
           )}
         </div>
-        <div style={{ height: 8, background: '#E8EDFB', borderRadius: 4, overflow: 'hidden' }}>
+        <div style={{ height: 6, background: 'rgba(255,255,255,0.08)', borderRadius: 4, overflow: 'hidden' }}>
           <div style={{
             height: '100%',
             width: `${Math.round(levelProgress * 100)}%`,
-            background: 'linear-gradient(90deg, #1D4ED8, #7C3AED)',
+            background: 'linear-gradient(90deg, #6366F1, #A78BFA)',
             borderRadius: 4,
             transition: 'width 0.6s ease',
-            boxShadow: '0 0 8px rgba(124,58,237,0.4)',
+            boxShadow: '0 0 10px rgba(99,102,241,0.5)',
           }} />
         </div>
       </button>
@@ -306,22 +274,22 @@ export default function EmpireTab({
       {companiesOwned > 0 && (
         <div style={{
           display: 'grid', gridTemplateColumns: '1fr 1fr',
-          background: '#fff',
-          borderBottom: '1px solid #E2E8F0',
+          background: 'rgba(255,255,255,0.02)',
+          borderBottom: '1px solid rgba(255,255,255,0.07)',
         }}>
           {[
-            { label: 'Companies', value: companiesOwned },
-            { label: 'Profit/Turn', value: '+' + formatMoney(profitPerTurn) },
+            { label: 'Companies', value: companiesOwned, color: '#E2E8F0' },
+            { label: 'Profit/Turn', value: '+' + formatMoney(profitPerTurn), color: '#4ADE80' },
           ].map((s, i) => (
             <div key={s.label} style={{
               padding: '10px 16px',
-              borderRight: i === 0 ? '1px solid #E2E8F0' : 'none',
+              borderRight: i === 0 ? '1px solid rgba(255,255,255,0.07)' : 'none',
               textAlign: 'center',
             }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
                 {s.label}
               </div>
-              <div style={{ fontSize: 20, fontWeight: 900, color: i === 1 ? '#16A34A' : '#1E293B', marginTop: 2 }}>
+              <div style={{ fontSize: 20, fontWeight: 900, color: s.color, marginTop: 2 }}>
                 {s.value}
               </div>
             </div>
@@ -332,24 +300,23 @@ export default function EmpireTab({
       {/* ── Sector tiles + prompts ── */}
       <div style={{ padding: '12px 12px 0' }}>
 
-        {/* Empty state Chip prompt */}
+        {/* Empty state */}
         {companiesOwned === 0 && (
           <div style={{
-            background: '#fff',
-            border: '1.5px dashed #93C5FD',
+            background: 'rgba(99,102,241,0.08)',
+            border: '1.5px dashed rgba(99,102,241,0.35)',
             borderRadius: 18, padding: '14px 16px',
             marginBottom: 10,
             display: 'flex', alignItems: 'center', gap: 12,
-            boxShadow: '0 2px 8px rgba(29,78,216,0.06)',
           }}>
             <div style={{ flexShrink: 0 }}>
               <Chip mood="excited" size={52} />
             </div>
             <div>
-              <div style={{ fontSize: 15, fontWeight: 900, color: '#1E293B', marginBottom: 3 }}>
+              <div style={{ fontSize: 15, fontWeight: 800, color: '#E2E8F0', marginBottom: 3 }}>
                 {state.chipGuideStep === 0 ? 'Tap Consumer Market to start!' : 'Put your $10M to work!'}
               </div>
-              <div style={{ fontSize: 12, fontWeight: 600, color: '#6B7280', lineHeight: 1.45 }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.5)', lineHeight: 1.45 }}>
                 {state.chipGuideStep === 0
                   ? "Pick a company, hit Buy, and you'll collect profit every turn. Let's go!"
                   : 'Tap a sector below to browse companies and make your first investment.'}
@@ -358,7 +325,7 @@ export default function EmpireTab({
           </div>
         )}
 
-        {/* Location tutorial — after turn 1, if affordable location exists */}
+        {/* Location tutorial */}
         {companiesOwned > 0 && state.turn >= 2 && !state.sawLocationTutorial && (() => {
           let tutCo = null, tutCost = 0, tutExtraProfit = 0
           Object.entries(portfolio).forEach(([id, entry]) => {
@@ -375,8 +342,8 @@ export default function EmpireTab({
           if (!tutCo) return null
           return (
             <div style={{
-              background: 'linear-gradient(135deg, #F0FDF4, #ECFDF5)',
-              border: '2px solid #86EFAC',
+              background: 'rgba(34,197,94,0.08)',
+              border: '1.5px solid rgba(34,197,94,0.25)',
               borderRadius: 16, padding: '13px 14px',
               marginBottom: 10,
               display: 'flex', alignItems: 'flex-start', gap: 12,
@@ -385,20 +352,20 @@ export default function EmpireTab({
                 <Chip mood="excited" size={44} />
               </div>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 11, fontWeight: 900, color: '#15803D', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 3 }}>
+                <div style={{ fontSize: 11, fontWeight: 800, color: '#4ADE80', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 3 }}>
                   🏗️ Tip: Expand!
                 </div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: '#1E293B', lineHeight: 1.4 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: '#E2E8F0', lineHeight: 1.4 }}>
                   {tutCo.emoji} {tutCo.name} can open a second location for {formatMoney(tutCost)} — adds +{formatMoney(tutExtraProfit)}/turn profit permanently!
                 </div>
-                <div style={{ fontSize: 12, color: '#16A34A', fontWeight: 600, marginTop: 3 }}>
+                <div style={{ fontSize: 12, color: '#4ADE80', fontWeight: 600, marginTop: 3 }}>
                   Tap the company → Investment Details to expand.
                 </div>
               </div>
               <button
                 onClick={onDismissLocationTutorial}
                 style={{
-                  background: 'none', border: 'none', color: '#9CA3AF',
+                  background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)',
                   fontSize: 20, cursor: 'pointer', padding: 0, flexShrink: 0, lineHeight: 1,
                 }}
               >×</button>
@@ -406,22 +373,22 @@ export default function EmpireTab({
           )
         })()}
 
-        {/* Idle cash warning — shown when >35% of empire value is sitting in cash */}
+        {/* Idle cash warning */}
         {companiesOwned > 0 && netWorth > 0 && cash / netWorth > 0.35 && (
           <div style={{
-            background: 'linear-gradient(135deg, #FFFBEB, #FEF3C7)',
-            border: '2px solid #FCD34D',
+            background: 'rgba(252,211,77,0.07)',
+            border: '1.5px solid rgba(252,211,77,0.25)',
             borderRadius: 16, padding: '13px 14px',
             marginBottom: 10,
             display: 'flex', alignItems: 'flex-start', gap: 12,
           }}>
             <span style={{ fontSize: 26, flexShrink: 0 }}>💤</span>
             <div>
-              <div style={{ fontSize: 13, fontWeight: 900, color: '#92400E', marginBottom: 2 }}>
+              <div style={{ fontSize: 13, fontWeight: 800, color: '#FCD34D', marginBottom: 2 }}>
                 {formatMoney(cash)} is sitting idle
               </div>
-              <div style={{ fontSize: 12, fontWeight: 600, color: '#92400E', lineHeight: 1.45 }}>
-                That's {Math.round((cash / netWorth) * 100)}% of your empire doing nothing. Companies earn far more than cash ever could — put it to work!
+              <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(252,211,77,0.7)', lineHeight: 1.45 }}>
+                That's {Math.round((cash / netWorth) * 100)}% of your empire doing nothing. Put it to work!
               </div>
             </div>
           </div>
@@ -445,48 +412,46 @@ export default function EmpireTab({
           const stateColor = getSectorStateColor(sectorState)
           const cycleBadge = getSectorCycleBadgeLabel(sectorCycle)
 
-          // Visual style per cycle state
           const tileStyle = (() => {
             if (sectorState === 'boom') return {
-              background: `linear-gradient(135deg, #F0FDF4 0%, #ECFDF5 50%, ${sector.color}10 100%)`,
-              border: '2px solid #22C55E',
-              boxShadow: '0 4px 20px rgba(34,197,94,0.30)',
-              iconBg: 'linear-gradient(135deg, #DCFCE7, #BBF7D0)',
-              iconBorder: '#22C55E',
-              iconGlow: '0 0 22px rgba(34,197,94,0.65)',
-              nameColor: '#15803D',
+              background: 'rgba(34,197,94,0.08)',
+              border: '2px solid rgba(34,197,94,0.35)',
+              boxShadow: '0 4px 20px rgba(34,197,94,0.12)',
+              iconBg: 'rgba(34,197,94,0.18)',
+              iconBorder: 'rgba(34,197,94,0.4)',
+              iconGlow: '0 0 20px rgba(34,197,94,0.5)',
+              nameColor: '#E2E8F0',
               animClass: 'sectorBoomPulse',
             }
             if (sectorState === 'downturn') return {
-              background: hasOwned ? 'linear-gradient(135deg, #FEF2F2, #fff 70%)' : '#FAFAFA',
-              border: '2px solid #FCA5A5',
-              boxShadow: '0 1px 6px rgba(239,68,68,0.12)',
-              iconBg: '#FEE2E2',
-              iconBorder: '#FCA5A5',
+              background: hasOwned ? 'rgba(239,68,68,0.07)' : 'rgba(255,255,255,0.02)',
+              border: '2px solid rgba(239,68,68,0.25)',
+              boxShadow: 'none',
+              iconBg: 'rgba(239,68,68,0.15)',
+              iconBorder: 'rgba(239,68,68,0.3)',
               iconGlow: 'none',
-              nameColor: '#1E293B',
-              opacity: 0.82,
+              nameColor: 'rgba(255,255,255,0.6)',
+              opacity: 0.8,
               animClass: null,
             }
             if (preSignal === 'preSlowdown') return {
-              background: hasOwned ? `linear-gradient(135deg, ${sector.color}0C, #FFFBEB 70%)` : '#FFFDF5',
-              border: `2px solid #FCD34D80`,
-              boxShadow: '0 2px 10px rgba(252,211,77,0.15)',
-              iconBg: hasOwned ? `linear-gradient(135deg, ${sector.color}35, ${sector.color}18)` : `${sector.color}15`,
-              iconBorder: `${sector.color}45`,
+              background: hasOwned ? 'rgba(252,211,77,0.06)' : 'rgba(255,255,255,0.03)',
+              border: '2px solid rgba(252,211,77,0.2)',
+              boxShadow: 'none',
+              iconBg: hasOwned ? `${sector.color}25` : `${sector.color}15`,
+              iconBorder: `${sector.color}35`,
               iconGlow: 'none',
-              nameColor: '#1E293B',
+              nameColor: '#E2E8F0',
               animClass: null,
             }
-            // Normal / preBoom
             return {
-              background: hasOwned ? `linear-gradient(135deg, ${sector.color}0C, #fff 60%)` : '#fff',
-              border: `2px solid ${hasOwned ? sector.color : '#E2E8F0'}`,
-              boxShadow: hasOwned ? `0 4px 18px ${sector.color}28` : '0 1px 4px rgba(0,0,0,0.04)',
-              iconBg: hasOwned ? `linear-gradient(135deg, ${sector.color}35, ${sector.color}18)` : `${sector.color}15`,
-              iconBorder: `${sector.color}45`,
-              iconGlow: hasOwned ? `0 0 20px ${sector.color}45` : 'none',
-              nameColor: '#1E293B',
+              background: hasOwned ? `linear-gradient(135deg, ${sector.color}12, rgba(255,255,255,0.04))` : 'rgba(255,255,255,0.04)',
+              border: `2px solid ${hasOwned ? sector.color + '40' : 'rgba(255,255,255,0.08)'}`,
+              boxShadow: hasOwned ? `0 4px 18px ${sector.color}18` : 'none',
+              iconBg: hasOwned ? `${sector.color}28` : `${sector.color}18`,
+              iconBorder: `${sector.color}40`,
+              iconGlow: hasOwned ? `0 0 18px ${sector.color}40` : 'none',
+              nameColor: '#E2E8F0',
               animClass: null,
             }
           })()
@@ -494,26 +459,26 @@ export default function EmpireTab({
           if (!isUnlocked) {
             return (
               <div key={sector.id} style={{
-                background: '#F8FAFC',
-                border: '1.5px solid #E2E8F0',
+                background: 'rgba(255,255,255,0.02)',
+                border: '1px solid rgba(255,255,255,0.06)',
                 borderRadius: 16, padding: '14px 16px',
                 marginBottom: 10,
-                opacity: 0.55,
+                opacity: 0.45,
                 display: 'flex', alignItems: 'center', gap: 12,
               }}>
                 <div style={{
                   width: 52, height: 52, borderRadius: 14, flexShrink: 0,
-                  background: '#EEF2FF',
+                  background: 'rgba(99,102,241,0.12)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontSize: 22,
                 }}>
                   🔒
                 </div>
                 <div>
-                  <div style={{ fontSize: 15, fontWeight: 800, color: '#374151' }}>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: 'rgba(255,255,255,0.6)' }}>
                     {sector.emoji} {sector.name}
                   </div>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: '#9CA3AF', marginTop: 2 }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.3)', marginTop: 2 }}>
                     Unlocks at {formatMoney(sector.unlockAmount)} net worth
                   </div>
                 </div>
@@ -540,11 +505,10 @@ export default function EmpireTab({
                 transition: 'all 0.2s',
               }}
             >
-              {/* Sector icon */}
               <div style={{
                 width: 52, height: 52, borderRadius: 14, flexShrink: 0,
                 background: tileStyle.iconBg,
-                border: `2px solid ${tileStyle.iconBorder}`,
+                border: `1.5px solid ${tileStyle.iconBorder}`,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontSize: 26,
                 boxShadow: tileStyle.iconGlow,
@@ -552,22 +516,22 @@ export default function EmpireTab({
                 {sectorState === 'boom' ? (
                   <span style={{ filter: 'drop-shadow(0 0 8px rgba(34,197,94,0.85))' }}>{sector.emoji}</span>
                 ) : sectorState === 'downturn' ? (
-                  <span style={{ filter: 'grayscale(0.5) opacity(0.75)' }}>{sector.emoji}</span>
+                  <span style={{ filter: 'grayscale(0.5) opacity(0.65)' }}>{sector.emoji}</span>
                 ) : sector.emoji}
               </div>
 
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                  <span style={{ fontSize: 16, fontWeight: 800, color: tileStyle.nameColor }}>
+                  <span style={{ fontSize: 16, fontWeight: 700, color: tileStyle.nameColor }}>
                     {sector.name}
                   </span>
                   <button
                     onClick={e => { e.stopPropagation(); cycleBadge.termId && onTermTap && onTermTap(cycleBadge.termId) }}
                     style={{
-                      fontSize: 10, fontWeight: 900,
+                      fontSize: 10, fontWeight: 800,
                       color: stateColor,
-                      background: stateColor + '20',
-                      border: `1px solid ${stateColor}40`,
+                      background: stateColor + '18',
+                      border: `1px solid ${stateColor}35`,
                       padding: '2px 8px', borderRadius: 10,
                       flexShrink: 0,
                       cursor: cycleBadge.termId ? 'pointer' : 'default',
@@ -578,31 +542,30 @@ export default function EmpireTab({
                   </button>
                 </div>
 
-                <div style={{ fontSize: 12, color: sectorState === 'downturn' ? '#9CA3AF' : '#6B7280', fontWeight: 600, lineHeight: 1.4, marginBottom: hasOwned ? 6 : 0 }}>
+                <div style={{ fontSize: 12, color: sectorState === 'downturn' ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.45)', fontWeight: 600, lineHeight: 1.4, marginBottom: hasOwned ? 6 : 0 }}>
                   {sector.description}
                 </div>
 
-                {/* Owned company emoji row */}
                 {hasOwned && ownedEmojis.length > 0 && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                     {ownedEmojis.map((emoji, i) => (
                       <span key={i} style={{
                         fontSize: 15,
-                        background: sectorState === 'downturn' ? '#FEE2E280' : sector.color + '22',
+                        background: sectorState === 'downturn' ? 'rgba(239,68,68,0.15)' : sector.color + '20',
                         borderRadius: 7, padding: '1px 5px',
                         filter: sectorState === 'downturn' ? 'grayscale(0.4)' : 'none',
                       }}>
                         {emoji}
                       </span>
                     ))}
-                    <span style={{ fontSize: 11, fontWeight: 800, color: sectorState === 'downturn' ? '#EF4444' : sector.color, marginLeft: 2 }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: sectorState === 'downturn' ? '#FCA5A5' : sector.color, marginLeft: 2 }}>
                       {ownedInSector.length} owned
                     </span>
                   </div>
                 )}
               </div>
 
-              <div style={{ fontSize: 20, color: '#CBD5E1', flexShrink: 0 }}>›</div>
+              <div style={{ fontSize: 20, color: 'rgba(255,255,255,0.2)', flexShrink: 0 }}>›</div>
             </button>
           )
         })}
@@ -610,35 +573,34 @@ export default function EmpireTab({
         {/* ── Empire Report Card ── */}
         {reportCard && (
           <div style={{
-            background: reportCard.bg,
-            border: `2px solid ${reportCard.color}40`,
+            background: 'rgba(255,255,255,0.04)',
+            border: `2px solid ${reportCard.color}30`,
             borderRadius: 18, padding: '16px',
             marginTop: 4,
           }}>
-            {/* Header row */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 14 }}>
               <div style={{
                 width: 58, height: 58, borderRadius: 16, flexShrink: 0,
-                background: reportCard.color,
+                background: reportCard.color + '25',
+                border: `2px solid ${reportCard.color}50`,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                boxShadow: `0 4px 14px ${reportCard.color}50`,
+                boxShadow: `0 4px 18px ${reportCard.color}30`,
               }}>
-                <span style={{ fontSize: 30, fontWeight: 900, color: '#fff' }}>{reportCard.grade}</span>
+                <span style={{ fontSize: 30, fontWeight: 900, color: reportCard.color }}>{reportCard.grade}</span>
               </div>
               <div>
-                <div style={{ fontSize: 11, fontWeight: 900, color: reportCard.color, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                <div style={{ fontSize: 11, fontWeight: 800, color: reportCard.color, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                   Empire Report Card
                 </div>
-                <div style={{ fontSize: 18, fontWeight: 900, color: '#1E293B', marginTop: 1 }}>
+                <div style={{ fontSize: 18, fontWeight: 800, color: '#E2E8F0', marginTop: 1 }}>
                   {reportCard.label}
                 </div>
-                <div style={{ fontSize: 12, fontWeight: 700, color: '#6B7280', marginTop: 1 }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.4)', marginTop: 1 }}>
                   Score: {reportCard.total} / 100 · tap a category to learn more
                 </div>
               </div>
             </div>
 
-            {/* Score breakdown — each row is tappable */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {reportCard.breakdown.map(row => {
                 const isOpen = expandedCard === row.id
@@ -647,49 +609,51 @@ export default function EmpireTab({
                     <button
                       onClick={() => setExpandedCard(isOpen ? null : row.id)}
                       style={{
-                        width: '100%', background: 'rgba(255,255,255,0.55)',
-                        border: `1px solid ${isOpen ? reportCard.color + '60' : 'rgba(0,0,0,0.07)'}`,
+                        width: '100%',
+                        background: isOpen ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.05)',
+                        border: `1px solid ${isOpen ? reportCard.color + '40' : 'rgba(255,255,255,0.08)'}`,
                         borderRadius: 12, padding: '10px 12px',
                         cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left',
                       }}
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                        <span style={{ fontSize: 13, fontWeight: 800, color: '#1E293B' }}>{row.label}</span>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: '#E2E8F0' }}>{row.label}</span>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <span style={{ fontSize: 12, fontWeight: 800, color: reportCard.color }}>{row.tip}</span>
-                          <span style={{ fontSize: 12, fontWeight: 900, color: '#6B7280', opacity: 0.6 }}>{isOpen ? '▲' : '▼'}</span>
+                          <span style={{ fontSize: 12, fontWeight: 700, color: reportCard.color }}>{row.tip}</span>
+                          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>{isOpen ? '▲' : '▼'}</span>
                         </div>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <div style={{ flex: 1, height: 6, background: 'rgba(0,0,0,0.10)', borderRadius: 3, overflow: 'hidden' }}>
+                        <div style={{ flex: 1, height: 5, background: 'rgba(255,255,255,0.08)', borderRadius: 3, overflow: 'hidden' }}>
                           <div style={{
                             height: '100%', borderRadius: 3,
                             width: `${Math.round((row.score / row.max) * 100)}%`,
                             background: reportCard.color,
                             transition: 'width 0.5s ease',
+                            boxShadow: `0 0 8px ${reportCard.color}60`,
                           }} />
                         </div>
-                        <span style={{ fontSize: 12, fontWeight: 900, color: reportCard.color, flexShrink: 0 }}>
+                        <span style={{ fontSize: 12, fontWeight: 800, color: reportCard.color, flexShrink: 0 }}>
                           {row.score}/{row.max}
                         </span>
                       </div>
                     </button>
                     {isOpen && (
                       <div style={{
-                        background: 'rgba(255,255,255,0.75)',
+                        background: 'rgba(255,255,255,0.04)',
                         borderRadius: '0 0 12px 12px',
                         padding: '12px 14px',
-                        borderLeft: `3px solid ${reportCard.color}50`,
+                        borderLeft: `3px solid ${reportCard.color}40`,
                         marginTop: -2,
                       }}>
-                        <div style={{ fontSize: 11, fontWeight: 700, color: '#9CA3AF', marginBottom: 6, fontStyle: 'italic' }}>
+                        <div style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.35)', marginBottom: 6, fontStyle: 'italic' }}>
                           📐 {row.formula}
                         </div>
                         <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
                           <div style={{ flexShrink: 0 }}>
                             <Chip mood={row.score >= 17 ? 'happy' : row.score >= 8 ? 'thinking' : 'worried'} size={40} />
                           </div>
-                          <p style={{ fontSize: 13, fontWeight: 600, color: '#1E293B', lineHeight: 1.55, margin: 0 }}>
+                          <p style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.8)', lineHeight: 1.55, margin: 0 }}>
                             {row.chipText}
                           </p>
                         </div>
@@ -703,7 +667,7 @@ export default function EmpireTab({
         )}
       </div>
 
-      {/* ── End Turn Button (floating) ── */}
+      {/* ── End Turn Button ── */}
       <div style={{
         position: 'fixed',
         bottom: 'calc(env(safe-area-inset-bottom, 0px) + 62px)',
@@ -711,16 +675,16 @@ export default function EmpireTab({
         width: 'calc(100% - 32px)', maxWidth: 398,
         zIndex: 110,
       }}>
-        {/* Guide tip: step 2 — hit End Turn */}
         {state.chipGuideStep === 2 && companiesOwned > 0 && (
           <div style={{
-            background: 'linear-gradient(135deg, #16A34A, #22C55E)',
+            background: 'rgba(34,197,94,0.15)',
+            border: '1px solid rgba(34,197,94,0.3)',
             borderRadius: 12, padding: '10px 14px',
             marginBottom: 8,
             display: 'flex', alignItems: 'center', gap: 8,
           }}>
             <span style={{ fontSize: 22 }}>🤖</span>
-            <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', lineHeight: 1.4 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#4ADE80', lineHeight: 1.4 }}>
               Nice buy! Now hit <strong>End Turn</strong> to collect your first profit →
             </div>
           </div>
@@ -734,7 +698,7 @@ export default function EmpireTab({
             border: 'none', borderRadius: 16,
             fontSize: 16, fontWeight: 900,
             fontFamily: 'inherit', cursor: 'pointer',
-            boxShadow: '0 6px 24px rgba(34,197,94,0.45)',
+            boxShadow: '0 6px 28px rgba(34,197,94,0.4)',
             animation: Object.keys(turnActions).length === 0 ? 'endTurnPulse 2s ease-in-out infinite' : 'none',
             letterSpacing: '0.01em',
           }}
@@ -745,16 +709,14 @@ export default function EmpireTab({
 
       <style>{`
         @keyframes endTurnPulse {
-          0%, 100% { box-shadow: 0 6px 24px rgba(34,197,94,0.45) }
-          50% { box-shadow: 0 8px 36px rgba(34,197,94,0.75) }
+          0%, 100% { box-shadow: 0 6px 28px rgba(34,197,94,0.40) }
+          50%       { box-shadow: 0 8px 40px rgba(34,197,94,0.70) }
         }
         @keyframes boomPulse {
-          0%, 100% { box-shadow: 0 4px 20px rgba(34,197,94,0.30) }
-          50%       { box-shadow: 0 6px 32px rgba(34,197,94,0.60) }
+          0%, 100% { box-shadow: 0 4px 20px rgba(34,197,94,0.12) }
+          50%       { box-shadow: 0 6px 32px rgba(34,197,94,0.28) }
         }
-        .sectorBoomPulse {
-          animation: boomPulse 2.2s ease-in-out infinite;
-        }
+        .sectorBoomPulse { animation: boomPulse 2.2s ease-in-out infinite; }
       `}</style>
     </div>
   )

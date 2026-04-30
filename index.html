@@ -6,17 +6,19 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Empire Builder" />
-  <meta name="theme-color" content="#1D4ED8" />
+  <meta name="theme-color" content="#080D1A" />
   <link rel="apple-touch-icon" href="/icon-192.png" />
   <link rel="manifest" href="/manifest.json" />
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet"/>
   <title>Empire Builder</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
     html, body { height: 100%; overflow: hidden; }
     body {
-      font-family: 'Nunito', 'Arial Rounded MT Bold', Arial, sans-serif;
-      background: #1D4ED8;
+      font-family: 'Space Grotesk', system-ui, -apple-system, sans-serif;
+      background: #080D1A;
       -webkit-font-smoothing: antialiased;
     }
     #root {
@@ -25,7 +27,9 @@
       height: 100vh;
       height: 100dvh;
       margin: 0 auto;
-      background: #EFF6FF;
+      background: #080D1A;
+      background-image: radial-gradient(rgba(96,165,250,0.065) 1px, transparent 1px);
+      background-size: 24px 24px;
       position: relative;
       overflow: hidden;
     }
