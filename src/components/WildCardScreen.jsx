@@ -32,9 +32,137 @@ const CONFETTI_PIECES = [
   { left: 65, delay: 0.2, dur: 2.6, color: '#C4B5FD', shape: 'rect',   size: 11 },
 ]
 
-export default function WildCardScreen({ wildCard, onContinue }) {
+export default function WildCardScreen({ wildCard, onContinue, onOpportunityAccept, onOpportunityDecline, cash }) {
   if (!wildCard) return null
 
+  // ── Opportunity choice screen ─────────────────────────────────────────────
+  if (wildCard.type === 'opportunity') {
+    const subtypeLabels = {
+      ma_offer:       '🤝 ACQUISITION OFFER',
+      product_launch: '🚀 PRODUCT LAUNCH',
+      partnership:    '🌟 PARTNERSHIP DEAL',
+    }
+    const headerText = subtypeLabels[wildCard.subtype] || '💡 OPPORTUNITY'
+
+    const canAfford = wildCard.subtype !== 'product_launch' || (cash || 0) >= (wildCard.launchCost || 0)
+
+    return (
+      <div style={{
+        position: 'fixed', inset: 0, zIndex: 300,
+        background: 'linear-gradient(160deg, #080D1A 0%, #0C1A3A 50%, #1A0C3A 100%)',
+        display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center',
+        padding: '32px 24px',
+        animation: 'wildCardIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+        overflow: 'hidden',
+      }}>
+        <style>{`
+          @keyframes wildCardIn {
+            from { transform: scale(0.8); opacity: 0 }
+            to   { transform: scale(1);   opacity: 1 }
+          }
+          @keyframes oppGlow {
+            0%, 100% { box-shadow: 0 0 30px rgba(252,211,77,0.2) }
+            50%       { box-shadow: 0 0 60px rgba(252,211,77,0.45) }
+          }
+        `}</style>
+
+        {/* Gold glow ring */}
+        <div style={{
+          position: 'absolute', inset: 0,
+          boxShadow: 'inset 0 0 80px rgba(252,211,77,0.08)',
+          pointerEvents: 'none',
+        }} />
+
+        {/* Header badge */}
+        <div style={{
+          background: 'linear-gradient(135deg, #92400E, #FCD34D)',
+          color: '#1C0A0A',
+          padding: '9px 28px', borderRadius: 50,
+          fontSize: 18, fontWeight: 900,
+          marginBottom: 24,
+          boxShadow: '0 4px 24px rgba(252,211,77,0.4)',
+          letterSpacing: '0.02em',
+        }}>
+          {headerText}
+        </div>
+
+        {/* Company */}
+        <div style={{ textAlign: 'center', marginBottom: 16 }}>
+          <div style={{
+            fontSize: 64,
+            filter: 'drop-shadow(0 0 20px rgba(252,211,77,0.6))',
+            marginBottom: 6,
+            animation: 'oppGlow 2.2s ease-in-out infinite',
+          }}>
+            {wildCard.companyEmoji}
+          </div>
+          <div style={{ fontSize: 22, fontWeight: 900, color: '#fff' }}>
+            {wildCard.companyName}
+          </div>
+        </div>
+
+        {/* Opportunity text */}
+        <div style={{
+          background: 'rgba(255,255,255,0.07)',
+          border: '1px solid rgba(255,255,255,0.12)',
+          borderRadius: 18,
+          padding: '14px 20px',
+          marginBottom: 24,
+          maxWidth: 340, width: '100%',
+          textAlign: 'center',
+          backdropFilter: 'blur(10px)',
+        }}>
+          <p style={{ fontSize: 16, fontWeight: 700, color: '#fff', lineHeight: 1.5, margin: 0 }}>
+            {wildCard.text}
+          </p>
+        </div>
+
+        {/* Choice buttons */}
+        <div style={{ width: '100%', maxWidth: 340, display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <button
+            onClick={canAfford ? onOpportunityAccept : undefined}
+            style={{
+              padding: '15px 20px',
+              background: canAfford
+                ? 'linear-gradient(135deg, #92400E, #D97706)'
+                : 'rgba(255,255,255,0.08)',
+              color: canAfford ? '#fff' : 'rgba(255,255,255,0.3)',
+              border: canAfford ? 'none' : '1px solid rgba(255,255,255,0.12)',
+              borderRadius: 16,
+              fontSize: 16, fontWeight: 900,
+              fontFamily: 'inherit',
+              cursor: canAfford ? 'pointer' : 'not-allowed',
+              boxShadow: canAfford ? '0 6px 24px rgba(217,119,6,0.45)' : 'none',
+              textAlign: 'center',
+            }}
+          >
+            {wildCard.acceptLabel}
+            <div style={{ fontSize: 12, fontWeight: 600, opacity: 0.8, marginTop: 3 }}>
+              {canAfford ? wildCard.acceptDetail : "Can't afford right now"}
+            </div>
+          </button>
+
+          <button
+            onClick={onOpportunityDecline}
+            style={{
+              padding: '13px 20px',
+              background: 'rgba(255,255,255,0.06)',
+              color: 'rgba(255,255,255,0.6)',
+              border: '1px solid rgba(255,255,255,0.12)',
+              borderRadius: 16,
+              fontSize: 15, fontWeight: 700,
+              fontFamily: 'inherit', cursor: 'pointer',
+            }}
+          >
+            {wildCard.declineLabel}
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  // ── Standard wildCard / setback screen ────────────────────────────────────
   const isSetback = wildCard.type === 'setback'
   const mood = isSetback ? 'worried' : 'excited'
 

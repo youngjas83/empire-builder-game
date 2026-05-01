@@ -14,6 +14,7 @@ export default function MarketTab({
   const [showMOIC, setShowMOIC] = useState(true)
   const [showMOICTooltip, setShowMOICTooltip] = useState(false)
   const [expandedROI, setExpandedROI] = useState(null)
+  const [marketSubTab, setMarketSubTab] = useState('overview')
 
   const econColor = getEconomyColor(economy.state)
   const netWorth = calcNetWorth(cash, portfolio, companyStates)
@@ -43,6 +44,25 @@ export default function MarketTab({
       }}>
         <div style={{ fontSize: 20, fontWeight: 800, color: '#E2E8F0', marginBottom: 12 }}>
           📊 Stats
+        </div>
+        <div style={{ display: 'flex', gap: 0 }}>
+          {[{ id: 'overview', label: 'Overview' }, { id: 'trophies', label: '🏆 Trophies' }].map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setMarketSubTab(tab.id)}
+              style={{
+                flex: 1, padding: '10px',
+                background: 'none', border: 'none',
+                borderBottom: `3px solid ${marketSubTab === tab.id ? '#818CF8' : 'transparent'}`,
+                color: marketSubTab === tab.id ? '#818CF8' : 'rgba(255,255,255,0.4)',
+                fontSize: 14, fontWeight: 800,
+                cursor: 'pointer', fontFamily: 'inherit',
+                transition: 'color 0.15s',
+              }}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
           <div style={{
@@ -74,7 +94,11 @@ export default function MarketTab({
         </div>
       </div>
 
-      <div style={{ padding: '12px 14px' }}>
+      {marketSubTab === 'trophies' ? (
+        <TrophyCase earned={achievements || []} />
+      ) : null}
+
+      {marketSubTab === 'overview' && <div style={{ padding: '12px 14px' }}>
 
         {/* Net Worth History */}
         <div style={card}>
@@ -155,57 +179,66 @@ export default function MarketTab({
               Buy your first company to see it here!
             </div>
           )}
-          {ownedIds.map(id => {
-            const co = COMPANIES.find(c => c.id === id)
-            const cs = companyStates[id]
-            const entry = portfolio[id]
-            if (!co || !cs || !entry) return null
-            const locMult = calcLocationsMultiplier(entry.locations)
-            const companyValue = Math.round(cs.profit * cs.multiplier * locMult)
+          {(() => {
+            let portfolioTotal = 0
+            const rows = ownedIds.map(id => {
+              const co = COMPANIES.find(c => c.id === id)
+              const cs = companyStates[id]
+              const entry = portfolio[id]
+              if (!co || !cs || !entry) return null
+              const locMult = calcLocationsMultiplier(entry.locations)
+              const companyValue = Math.round(cs.profit * cs.multiplier * locMult)
+              portfolioTotal += companyValue
+              return { id, co, cs, entry, locMult, companyValue }
+            }).filter(Boolean)
+            const breakdownTotal = Math.round(cash) + portfolioTotal
             return (
-              <div
-                key={id}
-                onClick={() => onSelectCompany && onSelectCompany(id)}
-                style={{
-                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                  padding: '9px 10px', borderRadius: 10, marginBottom: 6,
-                  background: 'rgba(255,255,255,0.04)',
-                  cursor: 'pointer',
-                  border: '1px solid rgba(255,255,255,0.07)',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ fontSize: 20 }}>{co.emoji}</span>
-                  <div>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: '#E2E8F0' }}>{co.name}</div>
-                    <div style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.35)' }}>
-                      {entry.locations} loc{entry.locations !== 1 ? 's' : ''} · {formatMoney(Math.round(cs.profit * locMult))}/turn
+              <>
+                {rows.map(({ id, co, cs, entry, locMult, companyValue }) => (
+                  <div
+                    key={id}
+                    onClick={() => onSelectCompany && onSelectCompany(id)}
+                    style={{
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                      padding: '9px 10px', borderRadius: 10, marginBottom: 6,
+                      background: 'rgba(255,255,255,0.04)',
+                      cursor: 'pointer',
+                      border: '1px solid rgba(255,255,255,0.07)',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ fontSize: 20 }}>{co.emoji}</span>
+                      <div>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: '#E2E8F0' }}>{co.name}</div>
+                        <div style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.35)' }}>
+                          {entry.locations} loc{entry.locations !== 1 ? 's' : ''} · {formatMoney(Math.round(cs.profit * locMult))}/turn
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ fontSize: 15, fontWeight: 900, color: '#818CF8' }}>{formatMoney(companyValue)}</div>
+                      <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', fontWeight: 600 }}>tap to view →</div>
                     </div>
                   </div>
+                ))}
+                <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', marginTop: 6, paddingTop: 10 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: 15, fontWeight: 800, color: '#E2E8F0' }}>📈 Empire Value</span>
+                    <span style={{ fontSize: 20, fontWeight: 900, color: '#818CF8' }}>{formatMoney(breakdownTotal)}</span>
+                  </div>
+                  <div style={{
+                    marginTop: 6, padding: '6px 10px',
+                    background: 'rgba(99,102,241,0.1)',
+                    border: '1px solid rgba(99,102,241,0.2)',
+                    borderRadius: 8,
+                    fontSize: 12, fontWeight: 700, color: '#818CF8', textAlign: 'center',
+                  }}>
+                    $1B goal · {Math.min(100, Math.round((breakdownTotal / 1000000000) * 100))}% there
+                  </div>
                 </div>
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: 15, fontWeight: 900, color: '#818CF8' }}>{formatMoney(companyValue)}</div>
-                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', fontWeight: 600 }}>tap to view →</div>
-                </div>
-              </div>
+              </>
             )
-          })}
-
-          <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', marginTop: 6, paddingTop: 10 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: 15, fontWeight: 800, color: '#E2E8F0' }}>📈 Empire Value</span>
-              <span style={{ fontSize: 20, fontWeight: 900, color: '#818CF8' }}>{formatMoney(netWorth)}</span>
-            </div>
-            <div style={{
-              marginTop: 6, padding: '6px 10px',
-              background: 'rgba(99,102,241,0.1)',
-              border: '1px solid rgba(99,102,241,0.2)',
-              borderRadius: 8,
-              fontSize: 12, fontWeight: 700, color: '#818CF8', textAlign: 'center',
-            }}>
-              $1B goal · {Math.min(100, Math.round((netWorth / 1000000000) * 100))}% there
-            </div>
-          </div>
+          })()}
         </div>
 
         {/* Portfolio ROI */}
@@ -398,61 +431,92 @@ export default function MarketTab({
           })}
         </div>
 
-        {/* Trophy Case */}
-        {(() => {
-          const earned   = achievements || []
-          const unlocked = ACHIEVEMENTS_CATALOG.filter(a => earned.includes(a.id))
-          const locked   = ACHIEVEMENTS_CATALOG.filter(a => !earned.includes(a.id))
-          return (
-            <div style={card}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                  🏆 Trophy Case
-                </div>
-                <div style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.35)' }}>
-                  {unlocked.length}/{ACHIEVEMENTS_CATALOG.length}
-                </div>
-              </div>
-              <div style={{ height: 5, background: 'rgba(255,255,255,0.08)', borderRadius: 3, overflow: 'hidden', marginBottom: 12 }}>
-                <div style={{
-                  height: '100%', borderRadius: 3,
-                  width: `${Math.round((unlocked.length / ACHIEVEMENTS_CATALOG.length) * 100)}%`,
-                  background: 'linear-gradient(90deg, #FCD34D, #F59E0B)',
-                  boxShadow: '0 0 10px rgba(252,211,77,0.4)',
-                  transition: 'width 0.4s ease',
-                }} />
-              </div>
-              {unlocked.length > 0 ? (
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                  {unlocked.map(a => (
-                    <div key={a.id} style={{
-                      background: 'rgba(252,211,77,0.1)',
-                      border: '1.5px solid rgba(252,211,77,0.3)',
-                      borderRadius: 10, padding: '6px 10px',
-                      display: 'flex', alignItems: 'center', gap: 6,
-                    }}>
-                      <span style={{ fontSize: 18 }}>{a.label.split(' ')[0]}</span>
-                      <span style={{ fontSize: 11, fontWeight: 700, color: '#FCD34D' }}>
-                        {a.label.split(' ').slice(1).join(' ')}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.3)', fontWeight: 600, textAlign: 'center', padding: '8px 0' }}>
-                  Play more turns to earn trophies!
-                </div>
-              )}
-              {locked.length > 0 && (
-                <div style={{ marginTop: 8, fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.2)' }}>
-                  🔒 {locked.length} more to unlock — keep building!
-                </div>
-              )}
-            </div>
-          )
-        })()}
+      </div>}
 
+    </div>
+  )
+}
+
+function TrophyCase({ earned }) {
+  const unlockedCount = earned.length
+  const totalCount = ACHIEVEMENTS_CATALOG.length
+
+  return (
+    <div style={{ padding: '12px 14px' }}>
+      <div style={{
+        background: 'rgba(252,211,77,0.08)',
+        border: '1px solid rgba(252,211,77,0.2)',
+        borderRadius: 14, padding: '14px 16px',
+        marginBottom: 14,
+        display: 'flex', alignItems: 'center', gap: 14,
+      }}>
+        <div style={{ fontSize: 36 }}>🏆</div>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 16, fontWeight: 900, color: '#FCD34D' }}>
+            {unlockedCount} / {totalCount} Trophies
+          </div>
+          <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.5)', marginTop: 2 }}>
+            {unlockedCount === totalCount ? 'You collected them all! 🎉' : `${totalCount - unlockedCount} still to unlock`}
+          </div>
+          <div style={{ height: 5, background: 'rgba(255,255,255,0.1)', borderRadius: 3, marginTop: 8 }}>
+            <div style={{
+              height: '100%', borderRadius: 3,
+              width: `${Math.round((unlockedCount / totalCount) * 100)}%`,
+              background: 'linear-gradient(90deg, #FCD34D, #F59E0B)',
+              transition: 'width 0.4s ease',
+            }} />
+          </div>
+        </div>
       </div>
+
+      {unlockedCount > 0 && (
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 8 }}>
+            Unlocked
+          </div>
+          {ACHIEVEMENTS_CATALOG.filter(a => earned.includes(a.id)).map(a => (
+            <div key={a.id} style={{
+              background: 'rgba(252,211,77,0.08)',
+              border: '1.5px solid rgba(252,211,77,0.25)',
+              borderRadius: 12, padding: '11px 14px',
+              marginBottom: 8,
+              display: 'flex', alignItems: 'center', gap: 12,
+            }}>
+              <div style={{ fontSize: 26, flexShrink: 0 }}>{a.label.split(' ')[0]}</div>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 800, color: '#FCD34D' }}>{a.label.split(' ').slice(1).join(' ')}</div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(252,211,77,0.6)', marginTop: 1 }}>{a.desc}</div>
+              </div>
+              <div style={{ marginLeft: 'auto', fontSize: 18 }}>✅</div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {unlockedCount < totalCount && (
+        <div>
+          <div style={{ fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 8 }}>
+            Locked
+          </div>
+          {ACHIEVEMENTS_CATALOG.filter(a => !earned.includes(a.id)).map(a => (
+            <div key={a.id} style={{
+              background: 'rgba(255,255,255,0.03)',
+              border: '1px solid rgba(255,255,255,0.07)',
+              borderRadius: 12, padding: '11px 14px',
+              marginBottom: 8,
+              display: 'flex', alignItems: 'center', gap: 12,
+              opacity: 0.5,
+            }}>
+              <div style={{ fontSize: 26, flexShrink: 0, filter: 'grayscale(1)' }}>{a.label.split(' ')[0]}</div>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 800, color: '#E2E8F0' }}>{a.label.split(' ').slice(1).join(' ')}</div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.35)', marginTop: 1 }}>{a.desc}</div>
+              </div>
+              <div style={{ marginLeft: 'auto', fontSize: 18 }}>🔒</div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

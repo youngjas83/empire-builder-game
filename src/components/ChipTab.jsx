@@ -26,7 +26,6 @@ export default function ChipTab({ state, onSubTabChange, onSearchChange, onToggl
           {[
             { id: 'qa', label: 'Q&A Bank' },
             { id: 'empire', label: 'My Empire' },
-            { id: 'trophies', label: '🏆 Trophies' },
           ].map(tab => (
             <button
               key={tab.id}
@@ -57,8 +56,6 @@ export default function ChipTab({ state, onSubTabChange, onSearchChange, onToggl
             onSearchChange={onSearchChange}
             onToggleQuestion={onToggleQuestion}
           />
-        ) : chipSubTab === 'trophies' ? (
-          <Trophies earned={state.achievements || []} />
         ) : (
           <MyEmpire state={state} />
         )}

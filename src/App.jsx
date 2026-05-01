@@ -315,7 +315,7 @@ export default function App() {
         const co = COMPANIES.find(c => c.id === actionDialog.companyId)
         if (co) {
           setBuyFly({ emoji: co.emoji, id: Date.now() })
-          setTimeout(() => setBuyFly(null), 750)
+          setTimeout(() => { setBuyFly(null); SFX.buyLand() }, 680)
         }
       } else if (actionDialog.type === 'sell') {
         newState = sellCompany(prev, actionDialog.companyId)
@@ -351,19 +351,24 @@ export default function App() {
       if (prev.chipGuideStep === 2 && Object.keys(prev.portfolio).length > 0) {
         next.chipGuideStep = 3
       }
-      // Play earn sound
+      // Play earn + cascade sounds
       if (next.earnedThisTurn > 0) {
+        setTimeout(() => SFX.profitCascade(), 150)
         setTimeout(() => {
           next.earnedThisTurn > 1000000 ? SFX.earnBig() : SFX.earn()
-        }, 300)
+        }, 400)
       }
       // Level up sound
       if (next.justLeveledUp) {
         setTimeout(() => SFX.levelUp(), 600)
       }
-      // Wild card sound
+      // Wild card / opportunity sound
       if (next.showWildCard) {
-        setTimeout(() => SFX.wildCard(), 200)
+        if (next.wildCard && next.wildCard.type === 'opportunity') {
+          setTimeout(() => SFX.opportunity(), 200)
+        } else {
+          setTimeout(() => SFX.wildCard(), 200)
+        }
       }
       // Flash sale sound
       if (next.flashSale && (!prev.flashSale || prev.flashSale.companyId !== next.flashSale.companyId)) {
@@ -392,6 +397,70 @@ export default function App() {
   }
 
   function handleWildCardContinue() {
+    setAppState(s => ({
+      ...s,
+      wildCard: null,
+      showWildCard: false,
+      showNewsModal: !s.crisisEvent,
+    }))
+  }
+
+  function handleOpportunityAccept() {
+    const { wildCard, companyStates, portfolio, cash } = appState
+    if (!wildCard || wildCard.type !== 'opportunity') return
+
+    setAppState(prev => {
+      const wc = prev.wildCard
+      let newCash = prev.cash
+      let newPortfolio = { ...prev.portfolio }
+      const newCompanyStates = { ...prev.companyStates }
+
+      if (wc.subtype === 'ma_offer') {
+        // Sell at acquisition premium
+        const newPortfolioCopy = { ...newPortfolio }
+        delete newPortfolioCopy[wc.companyId]
+        newPortfolio = newPortfolioCopy
+        newCash = prev.cash + (wc.offerPrice || wc.currentValue)
+        SFX.sell()
+      } else if (wc.subtype === 'product_launch') {
+        // Pay launch cost, add 3-turn profit boost
+        if (prev.cash < (wc.launchCost || 0)) return prev
+        newCash = prev.cash - (wc.launchCost || 0)
+        newPortfolio = {
+          ...newPortfolio,
+          [wc.companyId]: {
+            ...newPortfolio[wc.companyId],
+            profitBoost: { pct: 0.25, turnsLeft: 3 },
+          },
+        }
+        SFX.openLocation()
+      } else if (wc.subtype === 'partnership') {
+        // Free multiplier boost +10%
+        const cs = prev.companyStates[wc.companyId]
+        if (cs) {
+          const co = COMPANIES.find(c => c.id === wc.companyId)
+          const ceiling = co ? co.multCeiling : 40
+          newCompanyStates[wc.companyId] = {
+            ...cs,
+            multiplier: Math.min(ceiling, cs.multiplier * 1.10),
+          }
+        }
+        SFX.achievement()
+      }
+
+      return {
+        ...prev,
+        cash: newCash,
+        portfolio: newPortfolio,
+        companyStates: newCompanyStates,
+        wildCard: null,
+        showWildCard: false,
+        showNewsModal: !prev.crisisEvent,
+      }
+    })
+  }
+
+  function handleOpportunityDecline() {
     setAppState(s => ({
       ...s,
       wildCard: null,
@@ -739,7 +808,13 @@ export default function App() {
 
       {/* Wild Card Screen */}
       {showWildCard && wildCard && (
-        <WildCardScreen wildCard={wildCard} onContinue={handleWildCardContinue} />
+        <WildCardScreen
+          wildCard={wildCard}
+          onContinue={handleWildCardContinue}
+          onOpportunityAccept={handleOpportunityAccept}
+          onOpportunityDecline={handleOpportunityDecline}
+          cash={cash}
+        />
       )}
 
       {/* Crisis Modal — shown after wild card resolves, before news */}

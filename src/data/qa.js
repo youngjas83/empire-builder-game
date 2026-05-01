@@ -51,13 +51,13 @@ export const QA_CATEGORIES = [
         id: 'q_what_happens_in_slowdown',
         q: 'What happens in a Slowdown?',
         mood: 'worried',
-        a: "A Slowdown means the economy is struggling. Company profits drop and multipliers shrink — that means your companies are worth LESS. But here's the key: Super Safe companies like BurgerBlast and FreshMart barely feel it. Recession-Proof companies like FreshMart actually get STRONGER! Stick with the safe ones in tough times.",
+        a: "A Slowdown means the economy is struggling. Company profits drop and multipliers shrink — that means your companies are worth LESS. But here's the key: Defensive companies like BurgerBlast and FreshMart barely feel it. Counter-cyclical companies like FreshMart actually get STRONGER in tough times. Stick with the safe ones!",
       },
       {
         id: 'q_what_is_sector_trend',
         q: 'What is a Sector Trend?',
         mood: 'thinking',
-        a: "Each sector (Consumer Market, Property Empire, etc.) has its OWN mini economy! A sector can be booming even when the overall economy is in slowdown. That's why owning companies in different sectors is so powerful — if one sector tanks, another might be exploding. Watch the sector status on the Stats tab!",
+        a: "Each sector (Consumer Market, Real Estate Market, etc.) has its OWN mini economy! A sector can be booming even when the overall economy is in slowdown. That's why owning companies in different sectors is so powerful — if one sector tanks, another might be exploding. Watch the sector status on your Empire tab!",
       },
       {
         id: 'q_why_did_company_lose_value',
@@ -85,9 +85,9 @@ export const QA_CATEGORIES = [
       },
       {
         id: 'q_what_is_counter_cyclical',
-        q: 'What is 🛡️ Recession-Proof?',
+        q: 'What is 🛡️ Defensive?',
         mood: 'excited',
-        a: "Recession-Proof companies actually GROW during bad times! When the economy struggles, people trade down to cheaper options — like shopping at FreshMart instead of fancy grocery stores. FreshMart actually gets MORE customers when things are tough. It's your secret weapon against bad economies!",
+        a: "Defensive companies hold steady or even GROW during bad times! They sell things people always need — food, basic services, affordable goods. When the economy struggles, people trade down to cheaper options like FreshMart. Defensive companies are your foundation — they keep earning even when riskier companies are bleeding.",
       },
       {
         id: 'q_what_is_fad_alert',
@@ -117,7 +117,7 @@ export const QA_CATEGORIES = [
         id: 'q_what_to_do_in_slowdown',
         q: 'What should I do in a Slowdown?',
         mood: 'worried',
-        a: "Slowdown survival guide: 1) Keep your Super Safe companies (BurgerBlast, FreshMart, SkyFlats) — they barely feel it. 2) Think about selling your Very Risky companies before they drop more. 3) Cash earns interest — holding some cash is actually smart right now. 4) Watch the news for recovery signals. Slowdowns always end — get ready to pounce when they do!",
+        a: "Slowdown survival guide: 1) Keep your Defensive companies (BurgerBlast, FreshMart, SkyFlats) — they barely feel it. 2) Think about selling your Cyclical and Speculative companies before they drop more. 3) Cash earns interest — holding some cash is smart right now. 4) Watch the news for recovery signals. Slowdowns always end — get ready to pounce when they do!",
       },
       {
         id: 'q_hold_cash_or_invest',

@@ -48,6 +48,26 @@ export default function CompanyCard({
   const co = COMPANIES.find(c => c.id === companyId)
   if (!co) return null
 
+  const touchStartRef = React.useRef(null)
+
+  function handleTouchStart(e) {
+    const t = e.touches[0]
+    touchStartRef.current = { x: t.clientX, y: t.clientY }
+  }
+
+  function handleTouchEnd(e) {
+    if (!touchStartRef.current || !onBack) return
+    const t = e.changedTouches[0]
+    const dx = t.clientX - touchStartRef.current.x
+    const dy = Math.abs(t.clientY - touchStartRef.current.y)
+    const startedNearEdge = touchStartRef.current.x < 50
+    touchStartRef.current = null
+    if (dx > 60 && dy < 80 && startedNearEdge) {
+      try { navigator.vibrate(15) } catch(e) {}
+      onBack()
+    }
+  }
+
   const cs = companyStates[companyId] || { profit: co.baseProfit, multiplier: co.baseMultiplier, profitHistory: [] }
   const owned = portfolio[companyId]
   const baseValue = Math.round(cs.profit * cs.multiplier)
@@ -90,12 +110,16 @@ export default function CompanyCard({
   })()
 
   return (
-    <div style={{
-      position: 'fixed', inset: 0, zIndex: 150,
-      background: '#080D1A',
-      display: 'flex', flexDirection: 'column',
-      overflowY: 'auto',
-    }}>
+    <div
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 150,
+        background: '#080D1A',
+        display: 'flex', flexDirection: 'column',
+        overflowY: 'auto',
+      }}
+    >
       <style>{`
         @keyframes shimmerSweep {
           0%   { transform: translateX(-100%) skewX(-15deg) }
@@ -163,33 +187,6 @@ export default function CompanyCard({
           ←
         </button>
 
-        {sectorName && (
-          <div style={{
-            position: 'absolute',
-            top: 'calc(env(safe-area-inset-top, 0px) + 18px)',
-            left: '50%', transform: 'translateX(-50%)',
-            background: 'rgba(0,0,0,0.35)',
-            color: 'rgba(255,255,255,0.85)',
-            fontSize: 11, fontWeight: 700,
-            padding: '3px 12px', borderRadius: 20,
-            backdropFilter: 'blur(8px)',
-            whiteSpace: 'nowrap',
-          }}>
-            ← {sectorName}
-          </div>
-        )}
-
-        {cash !== undefined && (
-          <div style={{
-            position: 'absolute', bottom: 10, left: 12,
-            background: 'rgba(0,0,0,0.40)', color: '#fff',
-            fontSize: 11, fontWeight: 700,
-            padding: '3px 10px', borderRadius: 20,
-            backdropFilter: 'blur(8px)',
-          }}>
-            💰 {formatMoney(cash)}
-          </div>
-        )}
 
         {owned && (
           <div style={{
@@ -269,37 +266,6 @@ export default function CompanyCard({
         }}>
           {co.name}
         </div>
-        <div style={{
-          fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.7)',
-          background: 'rgba(0,0,0,0.30)',
-          padding: '3px 12px', borderRadius: 20, marginTop: 6,
-          backdropFilter: 'blur(8px)',
-        }}>
-          {sectorLabel}
-        </div>
-
-        {riskTier !== 'normal' && (
-          <div style={{
-            marginTop: 8,
-            padding: '3px 14px', borderRadius: 20,
-            fontSize: 11, fontWeight: 800, letterSpacing: '0.05em',
-            backdropFilter: 'blur(8px)',
-            background: riskTier === 'safe'  ? 'rgba(74,222,128,0.28)'
-                      : riskTier === 'high'  ? 'rgba(239,68,68,0.32)'
-                      : riskTier === 'wild'  ? 'rgba(124,58,237,0.38)'
-                      : 'rgba(0,0,0,0.30)',
-            color: riskTier === 'fading' ? 'rgba(255,255,255,0.45)' : '#fff',
-            border: riskTier === 'safe'  ? '1px solid rgba(74,222,128,0.45)'
-                  : riskTier === 'high'  ? '1px solid rgba(239,68,68,0.45)'
-                  : riskTier === 'wild'  ? '1px solid rgba(167,139,250,0.45)'
-                  : '1px solid rgba(255,255,255,0.12)',
-          }}>
-            {riskTier === 'safe'   ? '🛡️ Defensive'
-           : riskTier === 'high'  ? '🔥 Cyclical'
-           : riskTier === 'wild'  ? '🎲 Speculative'
-           : '📉 Declining'}
-          </div>
-        )}
       </div>
 
       {/* Card Body */}
@@ -307,9 +273,6 @@ export default function CompanyCard({
 
         {/* Badge + News Effect */}
         <div style={{ marginBottom: 16 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
-            Company Profile
-          </div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
             {(() => {
               const badge = BADGES[co.badge]
@@ -341,7 +304,7 @@ export default function CompanyCard({
                 background: companyNewsEffects[companyId] > 0 ? 'rgba(34,197,94,0.12)' : 'rgba(239,68,68,0.12)',
                 border: `1.5px solid ${companyNewsEffects[companyId] > 0 ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)'}`,
               }}>
-                {companyNewsEffects[companyId] > 0 ? '📰 +6% next turn' : '📰 −6% next turn'}
+                {companyNewsEffects[companyId] > 0 ? '📰 +10% next turn' : '📰 −10% next turn'}
               </div>
             )}
           </div>

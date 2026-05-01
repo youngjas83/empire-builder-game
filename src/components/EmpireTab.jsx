@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react'
 import { SECTORS, LEVELS, COMPANIES, BADGES } from '../data/companies.js'
 import { formatMoney, calcNetWorth, calcProfitPerTurn, getEconomyLabel, getEconomyColor, getSectorStateColor, calcLocationsMultiplier } from '../game/engine.js'
 import Chip from './Chip.jsx'
+import { SFX } from '../game/sounds.js'
 
 
 // ─── Empire Report Card ────────────────────────────────────────────────────────
@@ -135,8 +136,15 @@ export default function EmpireTab({
 }) {
   const [expandedCard, setExpandedCard] = useState(null)
   const [cascadeParticles, setCascadeParticles] = useState([])
+  const [muted, setMuted] = useState(() => SFX.isMuted())
   const sectorTileRefs = useRef({})
   const prevTurnRef = useRef(null)
+
+  function toggleMute() {
+    const next = !muted
+    SFX.setMuted(next)
+    setMuted(next)
+  }
 
   const {
     empireName, turn, cash, portfolio, companyStates,
@@ -241,13 +249,29 @@ export default function EmpireTab({
               ✏️
             </button>
           </div>
-          <div style={{
-            background: 'rgba(255,255,255,0.08)',
-            border: '1px solid rgba(255,255,255,0.12)',
-            borderRadius: 20, padding: '4px 12px',
-            fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.7)',
-          }}>
-            Turn {turn}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{
+              background: 'rgba(255,255,255,0.08)',
+              border: '1px solid rgba(255,255,255,0.12)',
+              borderRadius: 20, padding: '4px 12px',
+              fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.7)',
+            }}>
+              Turn {turn}
+            </div>
+            <button
+              onClick={toggleMute}
+              style={{
+                background: muted ? 'rgba(239,68,68,0.15)' : 'rgba(255,255,255,0.08)',
+                border: muted ? '1px solid rgba(239,68,68,0.3)' : '1px solid rgba(255,255,255,0.12)',
+                color: '#fff', borderRadius: 8,
+                width: 28, height: 28, fontSize: 13,
+                cursor: 'pointer', fontFamily: 'inherit',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}
+              title={muted ? 'Unmute' : 'Mute'}
+            >
+              {muted ? '🔇' : '🔊'}
+            </button>
           </div>
         </div>
 
@@ -485,7 +509,7 @@ export default function EmpireTab({
             const compactBadge = (() => {
               if (!sectorCycle) return null
               if (sectorState === 'boom') return { text: '🟢 Boom', color: '#4ADE80', termId: 'sector_expansion' }
-              if (sectorState === 'downturn') return { text: '🔴 Bust', color: '#FCA5A5', termId: 'sector_downturn' }
+              if (sectorState === 'downturn') return { text: '🔴 Downturn', color: '#FCA5A5', termId: 'sector_downturn' }
               if (preSignal === 'preSlowdown') return { text: '⚠️ Warning', color: '#FCD34D', termId: 'leading_indicator' }
               if (preSignal === 'preBoom') return { text: '🌱 Rising', color: '#4ADE80', termId: 'leading_indicator' }
               return null

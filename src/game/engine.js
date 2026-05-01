@@ -115,7 +115,7 @@ export function createInitialGameState(empireName, difficulty) {
     billionTurn: null,
     onboardingDismissed: false,
     chipGuideStep: 0,       // 0-3 = active guide, 4 = done
-    companyNewsEffects: {}, // { [companyId]: ±0.06 } — applied next resolveEndTurn
+    companyNewsEffects: {}, // { [companyId]: ±0.10 } — applied next resolveEndTurn
     sawLocationTutorial: false,
     crisisEvent: null,
     victorSnatched: null,
@@ -236,7 +236,15 @@ export function resolveEndTurn(state) {
     const cs = companyStates[id]
     if (!cs) return
     const locMult = calcLocationsMultiplier(entry.locations)
-    const earned = Math.round(cs.profit * locMult)
+    let earned = Math.round(cs.profit * locMult)
+
+    // Apply product launch profit boost if active
+    if (entry.profitBoost && entry.profitBoost.turnsLeft > 0) {
+      earned = Math.round(earned * (1 + entry.profitBoost.pct))
+      entry.profitBoost = { ...entry.profitBoost, turnsLeft: entry.profitBoost.turnsLeft - 1 }
+      if (entry.profitBoost.turnsLeft <= 0) delete entry.profitBoost
+    }
+
     entry.profitsCollected = (entry.profitsCollected || 0) + earned
     turnProfits[id] = earned
     totalProfit += earned
@@ -342,6 +350,60 @@ export function resolveEndTurn(state) {
     }
   }
 
+  // 6a. Opportunity events — positive choices, only if no wild card fired
+  const OPP_PROBS = { easy: 0.16, normal: 0.12, hard: 0.09 }
+  if (!wildCard && ownedIds.length > 0 && Math.random() < (OPP_PROBS[difficulty] || 0.12)) {
+    const eligibleIds = ownedIds.filter(id => {
+      const co = COMPANIES.find(c => c.id === id)
+      return co && co.badge !== 'fadingOut'
+    })
+    if (eligibleIds.length > 0) {
+      const targetId = eligibleIds[Math.floor(Math.random() * eligibleIds.length)]
+      const co = COMPANIES.find(c => c.id === targetId)
+      const currentValue = Math.round(companyStates[targetId].profit * companyStates[targetId].multiplier)
+
+      const subtypes = ['ma_offer', 'product_launch', 'partnership']
+      const subtype = subtypes[Math.floor(Math.random() * subtypes.length)]
+
+      let text, acceptLabel, declineLabel, acceptDetail, offerPrice, launchCost
+
+      if (subtype === 'ma_offer') {
+        offerPrice = Math.round(currentValue * 1.30)
+        text = getOpportunityText('ma_offer', targetId, co)
+        acceptLabel = `Sell for ${formatMoney(offerPrice)} →`
+        declineLabel = 'Hold — keep growing'
+        acceptDetail = `30% above market value`
+      } else if (subtype === 'product_launch') {
+        launchCost = Math.round(currentValue * 0.08)
+        text = getOpportunityText('product_launch', targetId, co)
+        acceptLabel = `Invest ${formatMoney(launchCost)} →`
+        declineLabel = 'Pass this time'
+        acceptDetail = `+25% profit boost for 3 turns`
+      } else {
+        text = getOpportunityText('partnership', targetId, co)
+        acceptLabel = `Accept partnership →`
+        declineLabel = 'Decline'
+        acceptDetail = `Free +10% company value`
+      }
+
+      wildCard = {
+        type: 'opportunity',
+        subtype,
+        companyId: targetId,
+        companyName: co ? co.name : targetId,
+        companyEmoji: co ? co.emoji : '🏢',
+        text,
+        acceptLabel,
+        declineLabel,
+        acceptDetail,
+        currentValue,
+        ...(offerPrice !== undefined && { offerPrice }),
+        ...(launchCost !== undefined && { launchCost }),
+      }
+      newLastWildCardTurn = turn
+    }
+  }
+
   // 6b. Crisis events — only if no wild card fired, player owns a risky company
   let crisisEvent = null
   if (!wildCard && ownedIds.length > 0) {
@@ -419,8 +481,8 @@ export function resolveEndTurn(state) {
   const newCompanyNewsEffects = {}
   newNews.headlines.forEach(h => {
     if (h.tier === 'companyNews' && h.companyId && h.sentiment) {
-      if (h.sentiment === 'positive') newCompanyNewsEffects[h.companyId] = 0.06
-      else if (h.sentiment === 'negative') newCompanyNewsEffects[h.companyId] = -0.06
+      if (h.sentiment === 'positive') newCompanyNewsEffects[h.companyId] = 0.10
+      else if (h.sentiment === 'negative') newCompanyNewsEffects[h.companyId] = -0.10
     }
   })
 
@@ -803,6 +865,44 @@ const CRISIS_TEXTS = {
   chipforge:      ["A batch of ChipForge chips has a defect. Pay for a quiet recall and fix, or let it become a public crisis.", "ChipForge is being investigated for antitrust violations. Pay for legal defence now or face a government freeze."],
   celebbuzz:      ["CelebBuzz's biggest client just got caught in a scandal. Pay for damage control or lose the client and the press goes wild.", "A former employee is threatening to sell inside stories about CelebBuzz clients. Pay for an NDA settlement or risk the fallout."],
   gameboxstudios: ["GameBox Studios shipped a game-breaking bug in their flagship title. Pay for emergency patches or face mass refund demands.", "GameBox Studios is accused of crunch culture. Pay for a staff wellbeing programme or face a union drive."],
+}
+
+const OPPORTUNITY_TEXTS = {
+  ma_offer: {
+    burgerblast:     "A national fast-food chain wants to absorb BurgerBlast — they're offering 30% above market value!",
+    freshmart:       "A retail giant is making a takeover bid for FreshMart at a 30% premium. Rare offer!",
+    novadrip:        "A luxury fashion house wants to acquire NovaDrip while the hype is still hot — 30% premium!",
+    toycraze:        "A global toy conglomerate wants to buy ToyCraze before the trend fades — 30% above market!",
+    skyflats:        "A real estate investment trust is offering 30% above market to absorb SkyFlats into their portfolio.",
+    storesafe:       "A logistics giant wants to roll StoreSafe into their network — 30% acquisition premium on the table.",
+    streamflix:      "A media conglomerate wants StreamFlix — they're offering 30% above market to lock in the subscriber base.",
+    default:         "A well-funded competitor is making a buyout offer at 30% above market value. Accept or hold?",
+  },
+  product_launch: {
+    burgerblast:     "BurgerBlast can launch a premium menu tier — invest now for a big short-term profit surge!",
+    freshmart:       "FreshMart can roll out a private-label product line — invest and watch profits spike for 3 turns!",
+    novadrip:        "NovaDrip is ready to drop an exclusive limited collection — invest now for 3 turns of turbo profits!",
+    toycraze:        "ToyCraze has a viral product prototype ready to launch — back it now for a 3-turn profit rocket!",
+    skyflats:        "SkyFlats can open a premium amenities floor — invest now for 3 turns of elevated rental income!",
+    streamflix:      "StreamFlix has a blockbuster original series ready to drop — invest now for a major subscriber surge!",
+    gameboxstudios:  "GameBox Studios can fast-track a DLC launch — invest now for a 3-turn profit spike!",
+    default:         "A new product line is ready to launch — invest a small amount now for a 3-turn profit boost!",
+  },
+  partnership: {
+    burgerblast:     "A top delivery app wants an exclusive BurgerBlast integration — instant valuation boost, zero cost!",
+    freshmart:       "A major loyalty program wants to partner with FreshMart — instant customer boost, completely free!",
+    skyflats:        "A premium lifestyle brand wants to co-brand SkyFlats — instant prestige boost, no investment needed!",
+    storesafe:       "A national moving company wants to refer all customers to StoreSafe — free valuation uplift!",
+    streamflix:      "A major telecoms provider wants to bundle StreamFlix — huge new subscriber base, zero cost!",
+    thunderfc:       "Thunder FC lands a free jersey sponsorship deal with a global brand — instant valuation surge!",
+    soundwave:       "SoundWave gets tapped for a free brand partnership with a streaming hardware giant!",
+    default:         "A Fortune 500 company wants to partner — instant 10% valuation boost at zero cost to you!",
+  },
+}
+
+function getOpportunityText(subtype, id, co) {
+  const bank = OPPORTUNITY_TEXTS[subtype] || {}
+  return bank[id] || bank.default || `${co ? co.name : id} has a new opportunity!`
 }
 
 function getCrisisText(id, co) {

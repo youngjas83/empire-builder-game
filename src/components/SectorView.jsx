@@ -1,17 +1,15 @@
-import React from 'react'
+import React, { useRef } from 'react'
 import { BADGES, COMPANIES, SECTORS } from '../data/companies.js'
 import { formatMoney, getSectorStateColor } from '../game/engine.js'
 
 function getCycleBadgeLabel(cycle) {
   if (!cycle) return '🟡 Normal'
   if (cycle.state === 'boom') {
-    return cycle.preSignal === 'preBoom' ? '🟢 Boom · 🌱 Easing' : '🟢 Boom'
+    return cycle.preSignal === 'preBoom' ? '🟢 Boom · Easing' : '🟢 Boom'
   }
-  if (cycle.state === 'downturn') {
-    return cycle.preSignal === 'preBoom' ? '🔴 Downturn · 🌱 Recovering' : '🔴 Downturn'
-  }
-  if (cycle.preSignal === 'preSlowdown') return '🟡 Normal · ⚠️ Slowing'
-  if (cycle.preSignal === 'preBoom') return '🟡 Normal · 🌱 Recovering'
+  if (cycle.state === 'downturn') return '🔴 Downturn'
+  if (cycle.preSignal === 'preSlowdown') return '🟡 Normal · ⚠️ Warning'
+  if (cycle.preSignal === 'preBoom') return '🟡 Normal · 🌱 Rising'
   return '🟡 Normal'
 }
 
@@ -32,6 +30,26 @@ export default function SectorView({
   const sector = SECTORS[sectorId]
   if (!sector) return null
 
+  const touchStartRef = useRef(null)
+
+  function handleTouchStart(e) {
+    const t = e.touches[0]
+    touchStartRef.current = { x: t.clientX, y: t.clientY }
+  }
+
+  function handleTouchEnd(e) {
+    if (!touchStartRef.current || !onBack) return
+    const t = e.changedTouches[0]
+    const dx = t.clientX - touchStartRef.current.x
+    const dy = Math.abs(t.clientY - touchStartRef.current.y)
+    const startedNearEdge = touchStartRef.current.x < 50
+    touchStartRef.current = null
+    if (dx > 60 && dy < 80 && startedNearEdge) {
+      try { navigator.vibrate(15) } catch(e) {}
+      onBack()
+    }
+  }
+
   const companies = COMPANIES
     .filter(c => c.sector === sectorId)
     .sort((a, b) => {
@@ -45,12 +63,16 @@ export default function SectorView({
   const cycleBadgeLabel = getCycleBadgeLabel(sectorCycle)
 
   return (
-    <div style={{
-      position: 'fixed', inset: 0, zIndex: 140,
-      background: '#080D1A',
-      display: 'flex', flexDirection: 'column',
-      overflowY: 'auto',
-    }}>
+    <div
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 140,
+        background: '#080D1A',
+        display: 'flex', flexDirection: 'column',
+        overflowY: 'auto',
+      }}
+    >
       {/* Header */}
       <div style={{
         background: `linear-gradient(150deg, ${sector.color}CC 0%, ${sector.color}99 100%)`,

@@ -1,6 +1,9 @@
 // Empire Builder Sound Engine — Web Audio API, no external deps
 
 let ctx = null
+let muted = false
+
+try { muted = localStorage.getItem('empireBuilderMuted') === 'true' } catch(e) {}
 
 function getCtx() {
   if (!ctx) {
@@ -30,6 +33,7 @@ function tone(freq, type, startTime, duration, gainVal, fadeOut = true) {
 }
 
 function playSequence(notes, globalGain = 0.18) {
+  if (muted) return
   const c = getCtx()
   if (!c) return
   let t = c.currentTime + 0.05
@@ -39,14 +43,24 @@ function playSequence(notes, globalGain = 0.18) {
   })
 }
 
-// Haptic feedback (mobile)
+// Haptic feedback (mobile) — respects mute
 function vibrate(pattern) {
+  if (muted) return
   if (navigator.vibrate) {
     try { navigator.vibrate(pattern) } catch (e) {}
   }
 }
 
 export const SFX = {
+  setMuted(val) {
+    muted = val
+    try { localStorage.setItem('empireBuilderMuted', val ? 'true' : 'false') } catch(e) {}
+    if (!val && navigator.vibrate) {
+      try { navigator.vibrate(20) } catch(e) {} // confirm unmute with a tap
+    }
+  },
+  isMuted() { return muted },
+
   buy() {
     // Cash register cha-ching
     playSequence([
@@ -206,5 +220,53 @@ export const SFX = {
       [784, 0.24, 'triangle'],
     ], 0.28)
     vibrate([30, 15, 30, 15, 80])
+  },
+
+  // ── New sounds ───────────────────────────────────────────────────────────────
+
+  profitCascade() {
+    // Coin shimmer sweep — plays as profit particles cascade
+    playSequence([
+      [523, 0.06, 'sine'],
+      [659, 0.06, 'sine'],
+      [784, 0.06, 'sine'],
+      [1047, 0.10, 'sine'],
+    ], 0.12)
+    vibrate([10])
+  },
+
+  flashPulse() {
+    // Flash sale tap — punchy double-ping
+    playSequence([
+      [1200, 0.05, 'triangle'],
+      [1400, 0.08, 'triangle'],
+    ], 0.18)
+    vibrate([15, 5, 25])
+  },
+
+  buyLand() {
+    // Soft thud when emoji lands in portfolio
+    playSequence([
+      [180, 0.06, 'triangle'],
+      [260, 0.10, 'triangle'],
+    ], 0.14)
+    vibrate([20])
+  },
+
+  opportunity() {
+    // Rising positive sting for new opportunity event
+    playSequence([
+      [440, 0.07, 'triangle'],
+      [554, 0.07, 'triangle'],
+      [659, 0.07, 'triangle'],
+      [880, 0.12, 'triangle'],
+      [1100, 0.16, 'triangle'],
+    ], 0.20)
+    vibrate([20, 10, 20, 10, 50])
+  },
+
+  swipeBack() {
+    // Quick swoosh haptic for swipe-to-go-back
+    vibrate([15])
   },
 }

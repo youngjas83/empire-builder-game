@@ -69,7 +69,7 @@ export const COMPANIES = [
     gradientFrom: '#FED7AA',
     gradientTo: '#EA580C',
     badge: 'safeBet',
-    about: "America's favorite fast-food chain with over 3,000 locations nationwide. Recession-proof comfort food that keeps customers coming back through good times and bad.",
+    about: "America's favorite fast-food chain — a national institution with a loyal customer base. Recession-proof comfort food that keeps customers coming back through good times and bad.",
     baseProfit: 167000,
     baseMultiplier: 18,
     locationCost: 0.15,
