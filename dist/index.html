@@ -21,6 +21,10 @@
       background: #080D1A;
       -webkit-font-smoothing: antialiased;
     }
+    @keyframes dotDrift {
+      from { background-position: 0 0; }
+      to   { background-position: 0 -24px; }
+    }
     #root {
       width: 100%;
       max-width: 430px;
@@ -30,11 +34,12 @@
       background: #080D1A;
       background-image: radial-gradient(rgba(96,165,250,0.065) 1px, transparent 1px);
       background-size: 24px 24px;
+      animation: dotDrift 10s linear infinite;
       position: relative;
       overflow: hidden;
     }
   </style>
-  <script type="module" crossorigin src="/assets/index-a8e89947.js"></script>
+  <script type="module" crossorigin src="/assets/index-c5d32662.js"></script>
 </head>
 <body>
   <div id="root"></div>

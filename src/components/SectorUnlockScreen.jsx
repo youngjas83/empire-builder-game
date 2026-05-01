@@ -15,7 +15,6 @@ export default function SectorUnlockScreen({ sectorId, onContinue }) {
   const chipMessages = {
     entertainment: "Oh WOW! You've unlocked Entertainment! 🎉 We're talking StreamFlix with 300 million subscribers, Thunder FC with fans on every continent, GameBox Studios, and more. These companies are HUGE — and some earn millions per turn. Time to play in the big leagues!",
     tech: "TECH IS UNLOCKED! 💻🚀 Welcome to the future. Tech companies can have the highest multipliers in the game — investors go crazy for tech. More risk, but the gains? They can be absolutely insane. You've earned this!",
-    industrials: "INDUSTRIALS UNLOCKED! ⚙️ You're now a serious empire builder. These are the backbone companies of the whole economy — energy, manufacturing, infrastructure. Steady, powerful, and incredibly valuable. Almost at a billion!",
   }
 
   return (

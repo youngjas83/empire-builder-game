@@ -537,23 +537,13 @@ export const SECTORS = {
     unlockAmount: 200000000,
     description: 'Software, AI, and hardware innovators',
   },
-  industrials: {
-    id: 'industrials',
-    name: 'Industrials Market',
-    emoji: '⚙️',
-    color: '#6B7280',
-    unlockLevel: 4,
-    unlockAmount: 500000000,
-    description: 'Manufacturing, energy, and infrastructure',
-  },
 }
 
 export const LEVELS = [
-  { level: 1, name: 'Street Smart',     requirement: 0,           color: '#EA580C', unlocks: 'Consumer Market & Real Estate Market' },
-  { level: 2, name: 'City Mogul',       requirement: 100000000,   color: '#7C3AED', unlocks: 'Entertainment Market (6 companies incl. Thunder FC ⚽)' },
-  { level: 3, name: 'Tech Pioneer',     requirement: 200000000,   color: '#0891B2', unlocks: 'Tech Market (6 companies incl. ChipForge ⚡ & NeuralAI 🤖)' },
-  { level: 4, name: 'Industrials Boss', requirement: 500000000,   color: '#6B7280', unlocks: 'Industrials Market (coming soon)' },
-  { level: 5, name: 'BILLIONAIRE!',     requirement: 1000000000,  color: '#FCD34D', unlocks: 'Victory! You built a billion-dollar empire.' },
+  { level: 1, name: 'Street Smart',  requirement: 0,           color: '#EA580C', unlocks: 'Consumer Market & Real Estate Market' },
+  { level: 2, name: 'City Mogul',    requirement: 100000000,   color: '#7C3AED', unlocks: 'Entertainment Market (6 companies incl. Thunder FC ⚽)' },
+  { level: 3, name: 'Tech Pioneer',  requirement: 200000000,   color: '#0891B2', unlocks: 'Tech Market (6 companies incl. ChipForge ⚡ & NeuralAI 🤖)' },
+  { level: 4, name: 'BILLIONAIRE!',  requirement: 1000000000,  color: '#FCD34D', unlocks: 'Victory! You built a billion-dollar empire.' },
 ]
 
 export function getCompanyById(id) {

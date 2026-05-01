@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { SECTORS, LEVELS, COMPANIES, BADGES } from '../data/companies.js'
 import { formatMoney, calcNetWorth, calcProfitPerTurn, getEconomyLabel, getEconomyColor, getSectorStateColor, calcLocationsMultiplier } from '../game/engine.js'
 import Chip from './Chip.jsx'
@@ -93,6 +93,36 @@ function getSectorCycleBadgeLabel(cycle) {
   return { text: '🟡 Normal', termId: null }
 }
 
+// ─── useCountUp ───────────────────────────────────────────────────────────────
+
+function useCountUp(value, duration = 750) {
+  const [display, setDisplay] = useState(value)
+  const prevRef = useRef(value)
+  const rafRef = useRef(null)
+
+  useEffect(() => {
+    const from = prevRef.current
+    prevRef.current = value
+    if (from === value) return
+
+    const diff = value - from
+    const start = performance.now()
+
+    function tick(now) {
+      const t = Math.min((now - start) / duration, 1)
+      const eased = 1 - Math.pow(1 - t, 3)
+      setDisplay(Math.round(from + diff * eased))
+      if (t < 1) rafRef.current = requestAnimationFrame(tick)
+    }
+
+    if (rafRef.current) cancelAnimationFrame(rafRef.current)
+    rafRef.current = requestAnimationFrame(tick)
+    return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current) }
+  }, [value])
+
+  return display
+}
+
 export default function EmpireTab({
   state,
   onSelectSector,
@@ -104,14 +134,52 @@ export default function EmpireTab({
   onTermTap,
 }) {
   const [expandedCard, setExpandedCard] = useState(null)
+  const [cascadeParticles, setCascadeParticles] = useState([])
+  const sectorTileRefs = useRef({})
+  const prevTurnRef = useRef(null)
+
   const {
     empireName, turn, cash, portfolio, companyStates,
     economy, sectorCycles, level, turnActions,
   } = state
 
+  // ── Profit cascade: fire when turn advances ──────────────────────────────────
+  useEffect(() => {
+    if (prevTurnRef.current === null) { prevTurnRef.current = turn; return }
+    if (turn === prevTurnRef.current) return
+    prevTurnRef.current = turn
+
+    const profits = state.turnProfits
+    if (!profits || Object.keys(profits).length === 0) return
+
+    const particles = []
+    let delay = 0
+    Object.entries(profits).forEach(([companyId, earned]) => {
+      if (earned <= 0) return
+      const co = COMPANIES.find(c => c.id === companyId)
+      if (!co) return
+      const tileEl = sectorTileRefs.current[co.sector]
+      if (!tileEl) return
+      const rect = tileEl.getBoundingClientRect()
+      const x = rect.left + rect.width * 0.35 + (Math.random() - 0.5) * 32
+      const y = rect.top + rect.height * 0.5
+      particles.push({ id: companyId + '-' + turn, label: '+' + formatMoney(earned), x, y, delay })
+      delay += 110
+    })
+
+    if (particles.length === 0) return
+    setCascadeParticles(particles)
+    const timer = setTimeout(() => setCascadeParticles([]), particles.length * 110 + 1500)
+    return () => clearTimeout(timer)
+  }, [turn])
+
   const netWorth = calcNetWorth(cash, portfolio, companyStates)
   const profitPerTurn = calcProfitPerTurn(portfolio, companyStates)
   const companiesOwned = Object.keys(portfolio).length
+
+  const animNetWorth = useCountUp(netWorth, 900)
+  const animCash = useCountUp(cash, 700)
+  const animProfitPerTurn = useCountUp(profitPerTurn, 600)
 
   const currentLevelData = LEVELS[level - 1]
   const nextLevelData = LEVELS[level]
@@ -133,10 +201,11 @@ export default function EmpireTab({
 
       {/* ── Header ── */}
       <div style={{
-        background: 'linear-gradient(150deg, #0F1A3D 0%, #1a1560 55%, #2D1B69 100%)',
+        background: 'linear-gradient(150deg, rgba(15,26,61,0.97) 0%, rgba(26,21,96,0.97) 55%, rgba(45,27,105,0.97) 100%)',
+        backdropFilter: 'blur(20px)',
         paddingTop: 'calc(env(safe-area-inset-top, 0px) + 14px)',
         paddingBottom: 20, paddingLeft: 16, paddingRight: 16,
-        position: 'relative', overflow: 'hidden',
+        position: 'sticky', top: 0, zIndex: 20, overflow: 'hidden',
         borderBottom: '1px solid rgba(255,255,255,0.07)',
       }}>
         <div style={{
@@ -193,7 +262,7 @@ export default function EmpireTab({
             textShadow: '0 2px 24px rgba(252,211,77,0.45)',
             marginBottom: 14,
           }}>
-            {formatMoney(netWorth)}
+            {formatMoney(animNetWorth)}
           </div>
         </div>
 
@@ -220,7 +289,7 @@ export default function EmpireTab({
             borderRadius: 20, padding: '5px 12px',
             fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.8)',
           }}>
-            💵 {formatMoney(cash)}
+            💵 {formatMoney(animCash)}
           </div>
           {profitPerTurn > 0 && (
             <div style={{
@@ -229,7 +298,7 @@ export default function EmpireTab({
               borderRadius: 20, padding: '5px 12px',
               fontSize: 12, fontWeight: 700, color: '#4ADE80',
             }}>
-              +{formatMoney(profitPerTurn)}/turn
+              +{formatMoney(animProfitPerTurn)}/turn
             </div>
           )}
         </div>
@@ -279,7 +348,7 @@ export default function EmpireTab({
         }}>
           {[
             { label: 'Companies', value: companiesOwned, color: '#E2E8F0' },
-            { label: 'Profit/Turn', value: '+' + formatMoney(profitPerTurn), color: '#4ADE80' },
+            { label: 'Profit/Turn', value: '+' + formatMoney(animProfitPerTurn), color: '#4ADE80' },
           ].map((s, i) => (
             <div key={s.label} style={{
               padding: '10px 16px',
@@ -394,181 +463,164 @@ export default function EmpireTab({
           </div>
         )}
 
-        {/* Sector tiles */}
-        {Object.values(SECTORS).map(sector => {
-          const isUnlocked = level >= sector.unlockLevel
-          const sectorCycle = sectorCycles[sector.id]
-          const sectorState = sectorCycle ? sectorCycle.state : 'normal'
-          const preSignal = sectorCycle?.preSignal
-          const ownedInSector = Object.keys(portfolio).filter(id => {
-            const co = COMPANIES.find(c => c.id === id)
-            return co && co.sector === sector.id
-          })
-          const hasOwned = ownedInSector.length > 0
-          const ownedEmojis = ownedInSector.map(id => {
-            const co = COMPANIES.find(c => c.id === id)
-            return co ? co.emoji : null
-          }).filter(Boolean)
-          const stateColor = getSectorStateColor(sectorState)
-          const cycleBadge = getSectorCycleBadgeLabel(sectorCycle)
+        {/* Sector tiles — 2-column grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+          {Object.values(SECTORS).map(sector => {
+            const isUnlocked = level >= sector.unlockLevel
+            const sectorCycle = sectorCycles[sector.id]
+            const sectorState = sectorCycle ? sectorCycle.state : 'normal'
+            const preSignal = sectorCycle?.preSignal
+            const ownedInSector = Object.keys(portfolio).filter(id => {
+              const co = COMPANIES.find(c => c.id === id)
+              return co && co.sector === sector.id
+            })
+            const hasOwned = ownedInSector.length > 0
+            const ownedEmojis = ownedInSector.map(id => {
+              const co = COMPANIES.find(c => c.id === id)
+              return co ? co.emoji : null
+            }).filter(Boolean)
+            const stateColor = getSectorStateColor(sectorState)
 
-          const tileStyle = (() => {
-            if (sectorState === 'boom') return {
-              background: 'rgba(34,197,94,0.08)',
-              border: '2px solid rgba(34,197,94,0.35)',
-              boxShadow: '0 4px 20px rgba(34,197,94,0.12)',
-              iconBg: 'rgba(34,197,94,0.18)',
-              iconBorder: 'rgba(34,197,94,0.4)',
-              iconGlow: '0 0 20px rgba(34,197,94,0.5)',
-              nameColor: '#E2E8F0',
-              animClass: 'sectorBoomPulse',
-            }
-            if (sectorState === 'downturn') return {
-              background: hasOwned ? 'rgba(239,68,68,0.07)' : 'rgba(255,255,255,0.02)',
-              border: '2px solid rgba(239,68,68,0.25)',
-              boxShadow: 'none',
-              iconBg: 'rgba(239,68,68,0.15)',
-              iconBorder: 'rgba(239,68,68,0.3)',
-              iconGlow: 'none',
-              nameColor: 'rgba(255,255,255,0.6)',
-              opacity: 0.8,
-              animClass: null,
-            }
-            if (preSignal === 'preSlowdown') return {
-              background: hasOwned ? 'rgba(252,211,77,0.06)' : 'rgba(255,255,255,0.03)',
-              border: '2px solid rgba(252,211,77,0.2)',
-              boxShadow: 'none',
-              iconBg: hasOwned ? `${sector.color}25` : `${sector.color}15`,
-              iconBorder: `${sector.color}35`,
-              iconGlow: 'none',
-              nameColor: '#E2E8F0',
-              animClass: null,
-            }
-            return {
-              background: hasOwned ? `linear-gradient(135deg, ${sector.color}12, rgba(255,255,255,0.04))` : 'rgba(255,255,255,0.04)',
-              border: `2px solid ${hasOwned ? sector.color + '40' : 'rgba(255,255,255,0.08)'}`,
-              boxShadow: hasOwned ? `0 4px 18px ${sector.color}18` : 'none',
-              iconBg: hasOwned ? `${sector.color}28` : `${sector.color}18`,
-              iconBorder: `${sector.color}40`,
-              iconGlow: hasOwned ? `0 0 18px ${sector.color}40` : 'none',
-              nameColor: '#E2E8F0',
-              animClass: null,
-            }
-          })()
+            // Compact badge label
+            const compactBadge = (() => {
+              if (!sectorCycle) return null
+              if (sectorState === 'boom') return { text: '🟢 Boom', color: '#4ADE80', termId: 'sector_expansion' }
+              if (sectorState === 'downturn') return { text: '🔴 Bust', color: '#FCA5A5', termId: 'sector_downturn' }
+              if (preSignal === 'preSlowdown') return { text: '⚠️ Warning', color: '#FCD34D', termId: 'leading_indicator' }
+              if (preSignal === 'preBoom') return { text: '🌱 Rising', color: '#4ADE80', termId: 'leading_indicator' }
+              return null
+            })()
 
-          if (!isUnlocked) {
-            return (
-              <div key={sector.id} style={{
-                background: 'rgba(255,255,255,0.02)',
-                border: '1px solid rgba(255,255,255,0.06)',
-                borderRadius: 16, padding: '14px 16px',
-                marginBottom: 10,
-                opacity: 0.45,
-                display: 'flex', alignItems: 'center', gap: 12,
-              }}>
-                <div style={{
-                  width: 52, height: 52, borderRadius: 14, flexShrink: 0,
-                  background: 'rgba(99,102,241,0.12)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 22,
+            const tileStyle = (() => {
+              if (sectorState === 'boom') return {
+                background: 'rgba(34,197,94,0.08)',
+                border: '2px solid rgba(34,197,94,0.35)',
+                boxShadow: '0 4px 20px rgba(34,197,94,0.12)',
+                nameColor: '#E2E8F0',
+                animClass: 'sectorBoomPulse',
+              }
+              if (sectorState === 'downturn') return {
+                background: hasOwned ? 'rgba(239,68,68,0.07)' : 'rgba(255,255,255,0.02)',
+                border: '2px solid rgba(239,68,68,0.25)',
+                boxShadow: 'none',
+                nameColor: 'rgba(255,255,255,0.6)',
+                opacity: 0.8,
+                animClass: null,
+              }
+              if (preSignal === 'preSlowdown') return {
+                background: hasOwned ? 'rgba(252,211,77,0.06)' : 'rgba(255,255,255,0.03)',
+                border: '2px solid rgba(252,211,77,0.2)',
+                boxShadow: 'none',
+                nameColor: '#E2E8F0',
+                animClass: null,
+              }
+              return {
+                background: hasOwned ? `linear-gradient(135deg, ${sector.color}12, rgba(255,255,255,0.04))` : 'rgba(255,255,255,0.04)',
+                border: `2px solid ${hasOwned ? sector.color + '40' : 'rgba(255,255,255,0.08)'}`,
+                boxShadow: hasOwned ? `0 4px 18px ${sector.color}18` : 'none',
+                nameColor: '#E2E8F0',
+                animClass: null,
+              }
+            })()
+
+            if (!isUnlocked) {
+              return (
+                <div key={sector.id} style={{
+                  background: 'rgba(255,255,255,0.02)',
+                  border: '1px solid rgba(255,255,255,0.06)',
+                  borderRadius: 14, padding: '14px 12px',
+                  opacity: 0.4,
+                  display: 'flex', flexDirection: 'column', gap: 8,
+                  minHeight: 110,
                 }}>
-                  🔒
-                </div>
-                <div>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: 'rgba(255,255,255,0.6)' }}>
-                    {sector.emoji} {sector.name}
+                  <div style={{ fontSize: 28 }}>🔒</div>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.5)', lineHeight: 1.2 }}>
+                      {sector.name}
+                    </div>
+                    <div style={{ fontSize: 10, fontWeight: 600, color: 'rgba(255,255,255,0.25)', marginTop: 3 }}>
+                      {formatMoney(sector.unlockAmount)}
+                    </div>
                   </div>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.3)', marginTop: 2 }}>
-                    Unlocks at {formatMoney(sector.unlockAmount)} net worth
-                  </div>
                 </div>
-              </div>
-            )
-          }
+              )
+            }
 
-          return (
-            <button
-              key={sector.id}
-              onClick={() => onSelectSector(sector.id)}
-              className={tileStyle.animClass || ''}
-              style={{
-                width: '100%',
-                background: tileStyle.background,
-                border: tileStyle.border,
-                borderRadius: 16, padding: '14px 16px',
-                marginBottom: 10,
-                display: 'flex', alignItems: 'center', gap: 12,
-                cursor: 'pointer', fontFamily: 'inherit',
-                textAlign: 'left',
-                boxShadow: tileStyle.boxShadow,
-                opacity: tileStyle.opacity || 1,
-                transition: 'all 0.2s',
-              }}
-            >
-              <div style={{
-                width: 52, height: 52, borderRadius: 14, flexShrink: 0,
-                background: tileStyle.iconBg,
-                border: `1.5px solid ${tileStyle.iconBorder}`,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 26,
-                boxShadow: tileStyle.iconGlow,
-              }}>
-                {sectorState === 'boom' ? (
-                  <span style={{ filter: 'drop-shadow(0 0 8px rgba(34,197,94,0.85))' }}>{sector.emoji}</span>
-                ) : sectorState === 'downturn' ? (
-                  <span style={{ filter: 'grayscale(0.5) opacity(0.65)' }}>{sector.emoji}</span>
-                ) : sector.emoji}
-              </div>
-
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                  <span style={{ fontSize: 16, fontWeight: 700, color: tileStyle.nameColor }}>
-                    {sector.name}
+            return (
+              <button
+                key={sector.id}
+                ref={el => { sectorTileRefs.current[sector.id] = el }}
+                onClick={() => onSelectSector(sector.id)}
+                className={tileStyle.animClass || ''}
+                style={{
+                  background: tileStyle.background,
+                  border: tileStyle.border,
+                  borderRadius: 14, padding: '14px 12px',
+                  display: 'flex', flexDirection: 'column', gap: 8,
+                  cursor: 'pointer', fontFamily: 'inherit',
+                  textAlign: 'left',
+                  boxShadow: tileStyle.boxShadow,
+                  opacity: tileStyle.opacity || 1,
+                  minHeight: 110,
+                  transition: 'all 0.2s',
+                }}
+              >
+                {/* Top row: emoji + badge */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <span style={{
+                    fontSize: 30,
+                    filter: sectorState === 'boom'
+                      ? 'drop-shadow(0 0 8px rgba(34,197,94,0.85))'
+                      : sectorState === 'downturn' ? 'grayscale(0.5) opacity(0.65)' : 'none',
+                  }}>
+                    {sector.emoji}
                   </span>
-                  <button
-                    onClick={e => { e.stopPropagation(); cycleBadge.termId && onTermTap && onTermTap(cycleBadge.termId) }}
-                    style={{
-                      fontSize: 10, fontWeight: 800,
-                      color: stateColor,
-                      background: stateColor + '18',
-                      border: `1px solid ${stateColor}35`,
-                      padding: '2px 8px', borderRadius: 10,
-                      flexShrink: 0,
-                      cursor: cycleBadge.termId ? 'pointer' : 'default',
-                      fontFamily: 'inherit',
-                    }}
-                  >
-                    {cycleBadge.text}
-                  </button>
+                  {compactBadge && (
+                    <button
+                      onClick={e => { e.stopPropagation(); compactBadge.termId && onTermTap && onTermTap(compactBadge.termId) }}
+                      style={{
+                        fontSize: 9, fontWeight: 800,
+                        color: compactBadge.color,
+                        background: compactBadge.color + '18',
+                        border: `1px solid ${compactBadge.color}35`,
+                        padding: '2px 6px', borderRadius: 8,
+                        cursor: compactBadge.termId ? 'pointer' : 'default',
+                        fontFamily: 'inherit', whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {compactBadge.text}
+                    </button>
+                  )}
                 </div>
 
-                <div style={{ fontSize: 12, color: sectorState === 'downturn' ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.45)', fontWeight: 600, lineHeight: 1.4, marginBottom: hasOwned ? 6 : 0 }}>
-                  {sector.description}
+                {/* Name */}
+                <div style={{ fontSize: 13, fontWeight: 700, color: tileStyle.nameColor, lineHeight: 1.2, flex: 1 }}>
+                  {sector.name}
                 </div>
 
-                {hasOwned && ownedEmojis.length > 0 && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                {/* Owned company emojis */}
+                {hasOwned ? (
+                  <div style={{ display: 'flex', gap: 3, flexWrap: 'wrap', alignItems: 'center' }}>
                     {ownedEmojis.map((emoji, i) => (
                       <span key={i} style={{
-                        fontSize: 15,
+                        fontSize: 14,
                         background: sectorState === 'downturn' ? 'rgba(239,68,68,0.15)' : sector.color + '20',
-                        borderRadius: 7, padding: '1px 5px',
+                        borderRadius: 6, padding: '1px 4px',
                         filter: sectorState === 'downturn' ? 'grayscale(0.4)' : 'none',
                       }}>
                         {emoji}
                       </span>
                     ))}
-                    <span style={{ fontSize: 11, fontWeight: 700, color: sectorState === 'downturn' ? '#FCA5A5' : sector.color, marginLeft: 2 }}>
-                      {ownedInSector.length} owned
-                    </span>
+                  </div>
+                ) : (
+                  <div style={{ fontSize: 10, fontWeight: 600, color: 'rgba(255,255,255,0.25)' }}>
+                    Tap to browse →
                   </div>
                 )}
-              </div>
-
-              <div style={{ fontSize: 20, color: 'rgba(255,255,255,0.2)', flexShrink: 0 }}>›</div>
-            </button>
-          )
-        })}
+              </button>
+            )
+          })}
+        </div>
 
         {/* ── Empire Report Card ── */}
         {reportCard && (
@@ -717,7 +769,41 @@ export default function EmpireTab({
           50%       { box-shadow: 0 6px 32px rgba(34,197,94,0.28) }
         }
         .sectorBoomPulse { animation: boomPulse 2.2s ease-in-out infinite; }
+        @keyframes profitFloat {
+          0%   { transform: translateY(0)    scale(0.75); opacity: 0; }
+          12%  { transform: translateY(-10px) scale(1.12); opacity: 1; }
+          75%  { transform: translateY(-72px) scale(1);    opacity: 1; }
+          100% { transform: translateY(-92px) scale(0.95); opacity: 0; }
+        }
       `}</style>
+
+      {/* ── Profit cascade overlay ── */}
+      {cascadeParticles.length > 0 && (
+        <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 500 }}>
+          {cascadeParticles.map(p => (
+            <div
+              key={p.id}
+              style={{
+                position: 'fixed',
+                left: p.x,
+                top: p.y,
+                transform: 'translateX(-50%)',
+                color: '#4ADE80',
+                fontSize: 16,
+                fontWeight: 900,
+                fontFamily: 'Space Grotesk, sans-serif',
+                letterSpacing: '-0.3px',
+                textShadow: '0 2px 14px rgba(74,222,128,0.8)',
+                animation: `profitFloat 1.35s ease-out ${p.delay}ms both`,
+                whiteSpace: 'nowrap',
+                pointerEvents: 'none',
+              }}
+            >
+              {p.label}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

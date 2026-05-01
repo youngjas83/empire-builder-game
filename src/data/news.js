@@ -141,25 +141,6 @@ export const SECTOR_HEADLINES = {
       "💻 🌱 Tech hiring picks up — sector may be recovering from slowdown",
     ],
   },
-  industrials: {
-    boom: [
-      "⚙️ Manufacturing output hits record — factory orders backlogged for months",
-      "⚙️ Infrastructure spending drives industrial sector boom",
-    ],
-    normal: [
-      "⚙️ Industrials sector stable — steady orders and employment",
-    ],
-    downturn: [
-      "⚙️ Factory orders drop sharply as businesses cut capital spending",
-      "⚙️ Industrial sector slowdown deepens — layoffs spreading",
-    ],
-    preDownturn: [
-      "⚙️ ⚠️ Manufacturing data weakening — industrial slowdown may be coming",
-    ],
-    preBoom: [
-      "⚙️ 🌱 Industrial orders recovering — manufacturing sector showing signs of life",
-    ],
-  },
 }
 
 // ─── Company Gossip ───────────────────────────────────────────────────────────

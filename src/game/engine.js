@@ -71,7 +71,6 @@ export function createInitialGameState(empireName, difficulty) {
     realEstate:    { state: 'normal', turnsLeft: 4 },
     entertainment: { state: 'normal', turnsLeft: 4 },
     tech:          { state: 'normal', turnsLeft: 4 },
-    industrials:   { state: 'normal', turnsLeft: 4 },
   }
   const firstNews = generateNews(economy, sectorCycles, [], 1, null, 1)
 
@@ -230,6 +229,7 @@ export function resolveEndTurn(state) {
 
   // 2. Collect profits from owned companies
   let totalProfit = 0
+  const turnProfits = {}
   const updatedPortfolio = JSON.parse(JSON.stringify(portfolio))
   Object.keys(updatedPortfolio).forEach(id => {
     const entry = updatedPortfolio[id]
@@ -238,6 +238,7 @@ export function resolveEndTurn(state) {
     const locMult = calcLocationsMultiplier(entry.locations)
     const earned = Math.round(cs.profit * locMult)
     entry.profitsCollected = (entry.profitsCollected || 0) + earned
+    turnProfits[id] = earned
     totalProfit += earned
   })
   cash = cash + totalProfit
@@ -480,6 +481,7 @@ export function resolveEndTurn(state) {
     level: newLevel,
     justLeveledUp,
     earnedThisTurn,
+    turnProfits,
     showEarnAnimation: earnedThisTurn > 0,
     lastWildCardTurn: newLastWildCardTurn,
     achievements: earnedAchievements,

@@ -75,7 +75,13 @@ export default function NewsModal({
         border: '1px solid rgba(255,255,255,0.08)',
         borderBottom: 'none',
       }}>
-        <style>{`@keyframes slideUp { from { transform: translateY(100%) } to { transform: translateY(0) } }`}</style>
+        <style>{`
+          @keyframes slideUp { from { transform: translateY(100%) } to { transform: translateY(0) } }
+          @keyframes flashSalePulse {
+            0%, 100% { box-shadow: 0 4px 20px rgba(252,211,77,0.10); border-color: rgba(252,211,77,0.30); }
+            50%       { box-shadow: 0 4px 32px rgba(252,211,77,0.40); border-color: rgba(252,211,77,0.70); }
+          }
+        `}</style>
 
         <div style={{ width: 36, height: 4, background: 'rgba(255,255,255,0.12)', borderRadius: 2, margin: '12px auto 0', flexShrink: 0 }} />
 
@@ -142,7 +148,7 @@ export default function NewsModal({
                   borderRadius: 16, padding: '14px 16px',
                   marginBottom: 10,
                   cursor: item.companyId ? 'pointer' : 'default',
-                  boxShadow: '0 4px 20px rgba(252,211,77,0.12)',
+                  animation: 'flashSalePulse 2.2s ease-in-out infinite',
                 }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>

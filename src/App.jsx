@@ -91,6 +91,7 @@ function sanitizeGameState(state) {
     crisisEvent: null,
     termModal: null,
     victorSnatched: null,
+    turnProfits: {},
     viewingCompany: null,
     viewingCompanyBack: false,
     viewingSector: null,
@@ -139,6 +140,7 @@ const ECONOMY_EXPLAIN = {
 
 export default function App() {
   const [appState, setAppState] = useState(createSetupState)
+  const [buyFly, setBuyFly] = React.useState(null)
 
   // ── Auto-save ─────────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -307,10 +309,14 @@ export default function App() {
         newState = {
           ...newState,
           showBuyToast: actionDialog.companyId,
-          // Guide step 1→2: player just bought their first company
           chipGuideStep: prev.chipGuideStep === 1 ? 2 : prev.chipGuideStep,
         }
         SFX.buy()
+        const co = COMPANIES.find(c => c.id === actionDialog.companyId)
+        if (co) {
+          setBuyFly({ emoji: co.emoji, id: Date.now() })
+          setTimeout(() => setBuyFly(null), 750)
+        }
       } else if (actionDialog.type === 'sell') {
         newState = sellCompany(prev, actionDialog.companyId)
         if (actionDialog.tradeData) {
@@ -368,7 +374,7 @@ export default function App() {
         setTimeout(() => SFX.win(), 500)
       }
       // Sector unlock
-      const SECTOR_UNLOCK_LEVELS = { 2: 'entertainment', 3: 'tech', 4: 'industrials' }
+      const SECTOR_UNLOCK_LEVELS = { 2: 'entertainment', 3: 'tech' }
       if (next.justLeveledUp && SECTOR_UNLOCK_LEVELS[next.justLeveledUp]) {
         setTimeout(() => SFX.sectorUnlock(), 400)
         return { ...next, showSectorUnlock: SECTOR_UNLOCK_LEVELS[next.justLeveledUp] }
@@ -867,39 +873,122 @@ export default function App() {
       {turn === 1 && Object.keys(portfolio).length === 0 && !onboardingDismissed && !showBillionScreen && (
         <OnboardingPopup onDismiss={handleDismissOnboarding} />
       )}
+
+      {/* Buy fly-to-portfolio */}
+      {buyFly && (
+        <div key={buyFly.id} style={{
+          position: 'fixed', left: '50%', top: '62%',
+          fontSize: 28, pointerEvents: 'none', zIndex: 600,
+          animation: 'buyFlyAnim 0.7s cubic-bezier(0.4, 0, 0.2, 1) forwards',
+        }}>
+          {buyFly.emoji}
+          <style>{`
+            @keyframes buyFlyAnim {
+              0%   { transform: translateX(-50%) scale(1.4); opacity: 1; }
+              30%  { transform: translateX(-50%) scale(1.1); opacity: 1; }
+              100% { transform: translateX(calc(-50% - 38vw)) translateY(32vh) scale(0.15); opacity: 0; }
+            }
+          `}</style>
+        </div>
+      )}
     </div>
   )
 }
 
-// ─── Level Up Toast ───────────────────────────────────────────────────────────
+// ─── Level Up Screen ──────────────────────────────────────────────────────────
 
 function LevelUpToast({ level, onDismiss }) {
-  const labels = ['', 'Street Smart', 'City Mogul', 'Tech Pioneer', 'Industrials Boss', 'BILLIONAIRE!']
+  const labels = ['', 'Street Smart', 'City Mogul', 'Tech Pioneer', 'BILLIONAIRE!']
+  const colors = ['', '#6366F1', '#8B5CF6', '#06B6D4', '#FCD34D']
+  const color = colors[level] || '#818CF8'
 
   React.useEffect(() => {
-    const t = setTimeout(onDismiss, 3500)
+    const t = setTimeout(onDismiss, 3200)
     return () => clearTimeout(t)
   }, [])
+
+  const particles = React.useMemo(() => Array.from({ length: 18 }, (_, i) => ({
+    id: i,
+    x: 10 + Math.random() * 80,
+    delay: Math.random() * 0.6,
+    dur: 1.4 + Math.random() * 0.8,
+    size: 4 + Math.random() * 6,
+    color: ['#FCD34D','#818CF8','#4ADE80','#F472B6','#60A5FA'][i % 5],
+  })), [level])
 
   return (
     <div
       onClick={onDismiss}
       style={{
-        position: 'fixed', top: 80, left: '50%', transform: 'translateX(-50%)',
-        zIndex: 400,
-        background: 'linear-gradient(135deg, #1D4ED8, #7C3AED)',
-        color: '#fff',
-        padding: '12px 28px',
-        borderRadius: 50,
-        fontSize: 16, fontWeight: 900,
-        boxShadow: '0 6px 28px rgba(29,78,216,0.55)',
-        animation: 'toastIn 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-        whiteSpace: 'nowrap',
+        position: 'fixed', inset: 0, zIndex: 450,
+        background: 'rgba(8,13,26,0.92)',
+        backdropFilter: 'blur(8px)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        flexDirection: 'column', gap: 0,
         cursor: 'pointer',
+        animation: 'lvlFadeIn 0.25s ease-out',
       }}
     >
-      🎉 Level {level}: {labels[level] || ''}!
-      <style>{`@keyframes toastIn { from { transform: translateX(-50%) scale(0.7); opacity: 0 } to { transform: translateX(-50%) scale(1); opacity: 1 } }`}</style>
+      <style>{`
+        @keyframes lvlFadeIn   { from { opacity: 0 } to { opacity: 1 } }
+        @keyframes lvlBadgePop { from { transform: scale(0.4); opacity: 0 } to { transform: scale(1); opacity: 1 } }
+        @keyframes lvlTitleIn  { from { transform: translateY(24px); opacity: 0 } to { transform: translateY(0); opacity: 1 } }
+        @keyframes lvlFloat    { 0% { transform: translateY(0); opacity: 1 } 100% { transform: translateY(-120px); opacity: 0 } }
+      `}</style>
+
+      {/* Particles */}
+      {particles.map(p => (
+        <div key={p.id} style={{
+          position: 'absolute',
+          left: `${p.x}%`, bottom: '30%',
+          width: p.size, height: p.size,
+          borderRadius: '50%',
+          background: p.color,
+          boxShadow: `0 0 6px ${p.color}`,
+          animation: `lvlFloat ${p.dur}s ease-out ${p.delay}s both`,
+          pointerEvents: 'none',
+        }} />
+      ))}
+
+      {/* Level badge */}
+      <div style={{
+        width: 110, height: 110, borderRadius: 32,
+        background: `linear-gradient(135deg, ${color}30, ${color}15)`,
+        border: `3px solid ${color}`,
+        boxShadow: `0 0 60px ${color}50`,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontSize: 48, fontWeight: 900,
+        animation: 'lvlBadgePop 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.1s both',
+        marginBottom: 28,
+      }}>
+        {level}
+      </div>
+
+      {/* Title */}
+      <div style={{
+        fontSize: 13, fontWeight: 800, color: color,
+        textTransform: 'uppercase', letterSpacing: '0.18em',
+        marginBottom: 8,
+        animation: 'lvlTitleIn 0.4s ease-out 0.35s both',
+      }}>
+        Level Up
+      </div>
+      <div style={{
+        fontSize: 30, fontWeight: 900, color: '#E2E8F0',
+        letterSpacing: '-0.5px', textAlign: 'center',
+        padding: '0 32px',
+        animation: 'lvlTitleIn 0.4s ease-out 0.45s both',
+      }}>
+        {labels[level] || ''}
+      </div>
+
+      <div style={{
+        marginTop: 48,
+        fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.3)',
+        animation: 'lvlTitleIn 0.4s ease-out 0.8s both',
+      }}>
+        Tap to continue
+      </div>
     </div>
   )
 }
