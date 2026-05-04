@@ -143,7 +143,6 @@ export default function EmpireTab({
   const [bouncingSectors, setBouncingSectors] = useState(new Set())
   const [bounceKey, setBounceKey] = useState(0)
   const [turnRingActive, setTurnRingActive] = useState(false)
-  const [turnRingId, setTurnRingId] = useState(0)
   const sectorTileRefs = useRef({})
   const prevTurnRef = useRef(null)
   const prevLevelRef = useRef(null)
@@ -167,7 +166,6 @@ export default function EmpireTab({
     prevTurnRef.current = turn
 
     setTurnRingActive(true)
-    setTurnRingId(id => id + 1)
     const ringTimer = setTimeout(() => setTurnRingActive(false), 700)
 
     const profits = state.turnProfits
@@ -301,24 +299,15 @@ export default function EmpireTab({
             </button>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <div style={{ position: 'relative', display: 'inline-flex' }}>
-              {turnRingActive && (
-                <div key={turnRingId} style={{
-                  position: 'absolute', inset: -4, borderRadius: 24,
-                  border: '2px solid #FCD34D',
-                  boxShadow: '0 0 14px rgba(252,211,77,0.7)',
-                  animation: 'turnRingFade 0.7s ease-out forwards',
-                  pointerEvents: 'none',
-                }} />
-              )}
-              <div style={{
-                background: 'rgba(255,255,255,0.08)',
-                border: '1px solid rgba(255,255,255,0.12)',
-                borderRadius: 20, padding: '4px 12px',
-                fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.7)',
-              }}>
-                Turn {turn}
-              </div>
+            <div style={{
+              background: turnRingActive ? 'rgba(252,211,77,0.25)' : 'rgba(255,255,255,0.08)',
+              border: `1px solid ${turnRingActive ? '#FCD34D' : 'rgba(255,255,255,0.12)'}`,
+              color: turnRingActive ? '#FCD34D' : 'rgba(255,255,255,0.7)',
+              borderRadius: 20, padding: '4px 12px',
+              fontSize: 12, fontWeight: 700,
+              transition: turnRingActive ? 'none' : 'background 0.6s ease-out, border-color 0.6s ease-out, color 0.6s ease-out',
+            }}>
+              Turn {turn}
             </div>
             <button
               onClick={toggleMute}
@@ -875,10 +864,6 @@ export default function EmpireTab({
           0%   { opacity: 1 }
           35%  { opacity: 0.85 }
           100% { opacity: 0 }
-        }
-        @keyframes turnRingFade {
-          0%   { opacity: 1; transform: scale(1) }
-          100% { opacity: 0; transform: scale(1.6) }
         }
         @keyframes econBoomGlow {
           0%, 100% { box-shadow: 0 0 0 0 rgba(74,222,128,0) }
