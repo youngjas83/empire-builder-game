@@ -284,25 +284,6 @@ export default function MarketTab({
                         <div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                             <div style={{ fontSize: 14, fontWeight: 800, color: '#E2E8F0' }}>{co.name}</div>
-                            {(() => {
-                              const pct = baseValue > 0 ? Math.round((marketDelta / baseValue) * 100) : 0
-                              const up = isMarketUp || pct > 0
-                              const down = isMarketDown || pct < 0
-                              if (!up && !down) return null
-                              const label = Math.abs(pct) >= 1
-                                ? `${up ? '↑' : '↓'} value ${up ? '+' : ''}${pct}%`
-                                : up ? '↑ boom' : '↓ downturn'
-                              return (
-                                <span style={{
-                                  fontSize: 11, fontWeight: 800,
-                                  color: up ? '#4ADE80' : '#FCA5A5',
-                                  background: up ? 'rgba(74,222,128,0.15)' : 'rgba(239,68,68,0.15)',
-                                  padding: '2px 6px', borderRadius: 6,
-                                }}>
-                                  {label}
-                                </span>
-                              )
-                            })()}
                           </div>
                           <div style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.35)' }}>
                             {entry.locations} location{entry.locations !== 1 ? 's' : ''}
