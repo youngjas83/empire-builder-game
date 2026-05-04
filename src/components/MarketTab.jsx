@@ -267,6 +267,9 @@ export default function MarketTab({
               const valueChange = currentValue - totalInvested
               const marketDelta = currentValue - baseValue
               const totalGain = valueChange + profitsCollected
+              const sectorState = sectorCycles[co.sector]?.state || 'normal'
+              const isMarketUp = sectorState === 'boom' || economy.state === 'booming'
+              const isMarketDown = sectorState === 'downturn' || economy.state === 'slowdown'
               const roi = totalInvested > 0 ? Math.round((totalGain / totalInvested) * 100) : 0
               const gainColor  = totalGain >= 0 ? '#4ADE80' : '#FCA5A5'
               const gainBg     = totalGain >= 0 ? 'rgba(74,222,128,0.1)' : 'rgba(239,68,68,0.1)'
@@ -287,10 +290,13 @@ export default function MarketTab({
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                             <div style={{ fontSize: 14, fontWeight: 800, color: '#E2E8F0' }}>{co.name}</div>
                             {(() => {
-                              if (baseValue === 0) return null
-                              const pct = Math.round((marketDelta / baseValue) * 100)
-                              if (Math.abs(pct) < 1) return null
-                              const up = pct > 0
+                              const pct = baseValue > 0 ? Math.round((marketDelta / baseValue) * 100) : 0
+                              const up = isMarketUp || pct > 0
+                              const down = isMarketDown || pct < 0
+                              if (!up && !down) return null
+                              const label = Math.abs(pct) >= 1
+                                ? `${up ? '↑' : '↓'} value ${up ? '+' : ''}${pct}%`
+                                : up ? '↑ boom' : '↓ downturn'
                               return (
                                 <span style={{
                                   fontSize: 11, fontWeight: 800,
@@ -298,7 +304,7 @@ export default function MarketTab({
                                   background: up ? 'rgba(74,222,128,0.15)' : 'rgba(239,68,68,0.15)',
                                   padding: '2px 6px', borderRadius: 6,
                                 }}>
-                                  {up ? '↑' : '↓'} value {up ? '+' : ''}{pct}%
+                                  {label}
                                 </span>
                               )
                             })()}

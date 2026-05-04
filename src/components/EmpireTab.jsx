@@ -166,7 +166,7 @@ export default function EmpireTab({
     prevTurnRef.current = turn
 
     setTurnRingActive(true)
-    const ringTimer = setTimeout(() => setTurnRingActive(false), 700)
+    const ringTimer = setTimeout(() => setTurnRingActive(false), 1200)
 
     const profits = state.turnProfits
     if (!profits || Object.keys(profits).length === 0) return () => clearTimeout(ringTimer)
@@ -300,12 +300,14 @@ export default function EmpireTab({
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <div style={{
-              background: turnRingActive ? 'rgba(252,211,77,0.25)' : 'rgba(255,255,255,0.08)',
-              border: `1px solid ${turnRingActive ? '#FCD34D' : 'rgba(255,255,255,0.12)'}`,
+              background: turnRingActive ? 'rgba(252,211,77,0.35)' : 'rgba(255,255,255,0.08)',
+              border: `2px solid ${turnRingActive ? '#FCD34D' : 'rgba(255,255,255,0.12)'}`,
               color: turnRingActive ? '#FCD34D' : 'rgba(255,255,255,0.7)',
-              borderRadius: 20, padding: '4px 12px',
-              fontSize: 12, fontWeight: 700,
-              transition: turnRingActive ? 'none' : 'background 0.6s ease-out, border-color 0.6s ease-out, color 0.6s ease-out',
+              borderRadius: 20, padding: turnRingActive ? '5px 14px' : '4px 12px',
+              fontSize: turnRingActive ? 13 : 12, fontWeight: 800,
+              boxShadow: turnRingActive ? '0 0 16px rgba(252,211,77,0.5)' : 'none',
+              transform: turnRingActive ? 'scale(1.15)' : 'scale(1)',
+              transition: turnRingActive ? 'none' : 'all 0.8s ease-out',
             }}>
               Turn {turn}
             </div>
