@@ -142,6 +142,8 @@ export default function EmpireTab({
   const [cashDelta, setCashDelta] = useState(null)
   const [bouncingSectors, setBouncingSectors] = useState(new Set())
   const [bounceKey, setBounceKey] = useState(0)
+  const [turnRingActive, setTurnRingActive] = useState(false)
+  const [turnRingId, setTurnRingId] = useState(0)
   const sectorTileRefs = useRef({})
   const prevTurnRef = useRef(null)
   const prevLevelRef = useRef(null)
@@ -164,8 +166,12 @@ export default function EmpireTab({
     if (turn === prevTurnRef.current) return
     prevTurnRef.current = turn
 
+    setTurnRingActive(true)
+    setTurnRingId(id => id + 1)
+    const ringTimer = setTimeout(() => setTurnRingActive(false), 700)
+
     const profits = state.turnProfits
-    if (!profits || Object.keys(profits).length === 0) return
+    if (!profits || Object.keys(profits).length === 0) return () => clearTimeout(ringTimer)
 
     const particles = []
     let delay = 0
@@ -196,7 +202,7 @@ export default function EmpireTab({
 
     setCascadeParticles(particles)
     const timer = setTimeout(() => setCascadeParticles([]), particles.length * 110 + 1500)
-    return () => { clearTimeout(timer); clearTimeout(bounceTimer) }
+    return () => { clearTimeout(timer); clearTimeout(bounceTimer); clearTimeout(ringTimer) }
   }, [turn])
 
   // ── Level-up flash ────────────────────────────────────────────────────────────
@@ -295,11 +301,24 @@ export default function EmpireTab({
             </button>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <div
-              key={turn}
-              className="turnPill"
-              style={{ borderRadius: 20, padding: '4px 12px', fontSize: 12, fontWeight: 700 }}>
-              Turn {turn}
+            <div style={{ position: 'relative', display: 'inline-flex' }}>
+              {turnRingActive && (
+                <div key={turnRingId} style={{
+                  position: 'absolute', inset: -4, borderRadius: 24,
+                  border: '2px solid #FCD34D',
+                  boxShadow: '0 0 14px rgba(252,211,77,0.7)',
+                  animation: 'turnRingFade 0.7s ease-out forwards',
+                  pointerEvents: 'none',
+                }} />
+              )}
+              <div style={{
+                background: 'rgba(255,255,255,0.08)',
+                border: '1px solid rgba(255,255,255,0.12)',
+                borderRadius: 20, padding: '4px 12px',
+                fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.7)',
+              }}>
+                Turn {turn}
+              </div>
             </div>
             <button
               onClick={toggleMute}
@@ -857,17 +876,9 @@ export default function EmpireTab({
           35%  { opacity: 0.85 }
           100% { opacity: 0 }
         }
-        .turnPill {
-          background: rgba(255,255,255,0.08);
-          border: 1px solid rgba(255,255,255,0.12);
-          color: rgba(255,255,255,0.7);
-          animation: turnFlip 0.5s ease-out;
-        }
-        @keyframes turnFlip {
-          0%   { opacity: 0; transform: scale(0.5); color: #FCD34D; background: rgba(252,211,77,0.3); border-color: rgba(252,211,77,0.5) }
-          45%  { opacity: 1; transform: scale(1.22); color: #FCD34D; background: rgba(252,211,77,0.25); border-color: rgba(252,211,77,0.4) }
-          75%  { transform: scale(0.96) }
-          100% { opacity: 1; transform: scale(1); color: rgba(255,255,255,0.7); background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.12) }
+        @keyframes turnRingFade {
+          0%   { opacity: 1; transform: scale(1) }
+          100% { opacity: 0; transform: scale(1.6) }
         }
         @keyframes econBoomGlow {
           0%, 100% { box-shadow: 0 0 0 0 rgba(74,222,128,0) }

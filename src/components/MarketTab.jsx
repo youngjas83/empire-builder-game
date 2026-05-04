@@ -286,15 +286,17 @@ export default function MarketTab({
                         <div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                             <div style={{ fontSize: 14, fontWeight: 800, color: '#E2E8F0' }}>{co.name}</div>
-                            {marketDelta !== 0 && (() => {
-                              const pct = baseValue > 0 ? Math.round((marketDelta / baseValue) * 100) : 0
-                              const up = marketDelta > 0
+                            {(() => {
+                              if (baseValue === 0) return null
+                              const pct = Math.round((marketDelta / baseValue) * 100)
+                              if (Math.abs(pct) < 1) return null
+                              const up = pct > 0
                               return (
                                 <span style={{
-                                  fontSize: 10, fontWeight: 800,
+                                  fontSize: 11, fontWeight: 800,
                                   color: up ? '#4ADE80' : '#FCA5A5',
-                                  background: up ? 'rgba(74,222,128,0.12)' : 'rgba(239,68,68,0.12)',
-                                  padding: '1px 5px', borderRadius: 5,
+                                  background: up ? 'rgba(74,222,128,0.15)' : 'rgba(239,68,68,0.15)',
+                                  padding: '2px 6px', borderRadius: 6,
                                 }}>
                                   {up ? '↑' : '↓'} value {up ? '+' : ''}{pct}%
                                 </span>
