@@ -297,13 +297,8 @@ export default function EmpireTab({
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <div
               key={turn}
-              style={{
-                background: 'rgba(255,255,255,0.08)',
-                border: '1px solid rgba(255,255,255,0.12)',
-                borderRadius: 20, padding: '4px 12px',
-                fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.7)',
-                animation: 'turnFlip 0.38s ease-out',
-              }}>
+              className="turnPill"
+              style={{ borderRadius: 20, padding: '4px 12px', fontSize: 12, fontWeight: 700 }}>
               Turn {turn}
             </div>
             <button
@@ -387,16 +382,6 @@ export default function EmpireTab({
               fontSize: 12, fontWeight: 700, color: '#4ADE80',
             }}>
               +{formatMoney(animProfitPerTurn)}/turn
-            </div>
-          )}
-          {state.profitStreak >= 3 && (
-            <div style={{
-              background: 'rgba(251,146,60,0.2)',
-              border: '1.5px solid rgba(251,146,60,0.45)',
-              borderRadius: 20, padding: '5px 12px',
-              fontSize: 12, fontWeight: 800, color: '#FB923C',
-            }}>
-              🔥 {state.profitStreak}
             </div>
           )}
         </div>
@@ -871,6 +856,12 @@ export default function EmpireTab({
           0%   { opacity: 1 }
           35%  { opacity: 0.85 }
           100% { opacity: 0 }
+        }
+        .turnPill {
+          background: rgba(255,255,255,0.08);
+          border: 1px solid rgba(255,255,255,0.12);
+          color: rgba(255,255,255,0.7);
+          animation: turnFlip 0.5s ease-out;
         }
         @keyframes turnFlip {
           0%   { opacity: 0; transform: scale(0.5); color: #FCD34D; background: rgba(252,211,77,0.3); border-color: rgba(252,211,77,0.5) }

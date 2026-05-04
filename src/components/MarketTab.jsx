@@ -261,9 +261,11 @@ export default function MarketTab({
               if (!co || !cs || !entry) return null
               const locMult = calcLocationsMultiplier(entry.locations)
               const currentValue = Math.round(cs.profit * cs.multiplier * locMult)
+              const baseValue = Math.round(co.baseProfit * co.baseMultiplier * locMult)
               const totalInvested = (entry.purchasePrice || 0) + (entry.locationSpend || 0)
               const profitsCollected = entry.profitsCollected || 0
               const valueChange = currentValue - totalInvested
+              const marketDelta = currentValue - baseValue
               const totalGain = valueChange + profitsCollected
               const roi = totalInvested > 0 ? Math.round((totalGain / totalInvested) * 100) : 0
               const gainColor  = totalGain >= 0 ? '#4ADE80' : '#FCA5A5'
@@ -284,9 +286,9 @@ export default function MarketTab({
                         <div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                             <div style={{ fontSize: 14, fontWeight: 800, color: '#E2E8F0' }}>{co.name}</div>
-                            {valueChange !== 0 && (() => {
-                              const pct = totalInvested > 0 ? Math.round((valueChange / totalInvested) * 100) : 0
-                              const up = valueChange > 0
+                            {marketDelta !== 0 && (() => {
+                              const pct = baseValue > 0 ? Math.round((marketDelta / baseValue) * 100) : 0
+                              const up = marketDelta > 0
                               return (
                                 <span style={{
                                   fontSize: 10, fontWeight: 800,
