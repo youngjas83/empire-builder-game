@@ -5,23 +5,23 @@ export const TERMS = {
     definition: 'How much investors pay for every $1 a company earns. A P/E of 20× means investors pay $20 for each $1 of profit. Higher P/E = investors expect strong future growth.',
     example: 'CloudCore trades at 22× — investors are paying a premium because they believe cloud computing will keep growing fast.',
   },
-  recession: {
-    term: 'Recession',
-    plain: 'Economic downturn',
-    definition: 'When the overall economy shrinks — businesses earn less, people spend less, and company values drop. Recessions are a normal part of the economic cycle and always end eventually.',
-    example: 'During a recession, cyclical companies like luxury resorts get hit hardest because people cut non-essential spending first.',
+  downturn: {
+    term: 'Downturn',
+    plain: 'Economy or sector under pressure',
+    definition: 'When the economy or a sector shrinks — businesses earn less, people spend less, and company values drop. Downturns are a normal part of the economic cycle and always end eventually.',
+    example: 'During a downturn, cyclical companies like luxury resorts get hit hardest because people cut non-essential spending first.',
   },
-  expansion: {
-    term: 'Expansion',
-    plain: 'Economic growth period',
-    definition: 'When the economy is growing — businesses earn more, people spend more, and company values rise. Also called a "boom." The economy naturally moves between expansion and recession.',
-    example: 'In an expansion, even riskier companies tend to perform well as money flows freely through the economy.',
+  boom: {
+    term: 'Boom',
+    plain: 'Economy or sector in strong growth',
+    definition: 'When the economy or a sector is growing fast — businesses earn more, people spend more, and company values rise. The economy naturally moves between boom and downturn.',
+    example: 'In a boom, even riskier companies tend to perform well as money flows freely through the economy.',
   },
   stable: {
     term: 'Stable Economy',
     plain: 'Normal conditions — neither boom nor bust',
     definition: 'The economy is ticking along normally. No strong growth, no shrinkage. Company values stay close to their baseline and it\'s a good time to be selective.',
-    example: 'Stable periods are ideal for analysing companies carefully and buying at fair prices before the next expansion.',
+    example: 'Stable periods are ideal for analysing companies carefully and buying at fair prices before the next boom.',
   },
   volatility: {
     term: 'Volatility',
@@ -29,22 +29,28 @@ export const TERMS = {
     definition: 'High volatility means a company\'s value can jump or crash dramatically from one period to the next. Low volatility means it stays relatively steady. More volatile = more risk AND more potential reward.',
     example: 'A speculative AI company is highly volatile — it could double or halve in value quickly depending on the latest news.',
   },
+  stability: {
+    term: 'Stability',
+    plain: 'How steady a company\'s value stays over time',
+    definition: 'More filled circles means higher stability — the company\'s value barely budges regardless of economic conditions. Fewer circles means the value swings sharply with good and bad news. High stability = lower risk but also lower upside. Low stability = higher risk with bigger swings in both directions.',
+    example: 'A grocery chain has very high stability — people buy food regardless of the economy. A crypto trading app has very low stability — its value can double or halve in a single turn.',
+  },
   earnings: {
     term: 'Earnings',
     plain: 'A company\'s profit after costs',
     definition: 'The money a company makes after paying all its costs — wages, rent, materials, taxes. Earnings are the engine of company value: higher earnings usually means a higher stock price.',
-    example: 'BurgerBlast has stable earnings because people always need to eat, even in a recession.',
+    example: 'BurgerBlast has stable earnings because people always need to eat, even in a downturn.',
   },
   defensive: {
     term: 'Defensive Stock',
     plain: 'Safe, stable investment',
-    definition: 'Companies that hold their value even in a recession. People still buy food, medicine, and basic services no matter how bad the economy gets. Boring — but reliably profitable.',
+    definition: 'Companies that hold their value even in a downturn. People still buy food, medicine, and basic services no matter how bad the economy gets. Boring — but reliably profitable.',
     example: 'Discount grocers like FreshMart are classic defensives — they actually get more customers when times are tough.',
   },
   cyclical: {
     term: 'Cyclical Stock',
     plain: 'Rises and falls with the economy',
-    definition: 'Companies whose earnings surge during expansions and collapse during recessions. Their performance follows the economic cycle closely. High risk, high reward if you time it right.',
+    definition: 'Companies whose earnings surge during booms and collapse during downturns. Their performance follows the economic cycle closely. High risk, high reward if you time it right.',
     example: 'SunVilla is cyclical — luxury holidays are the first thing people cut when money gets tight.',
   },
   growth: {
@@ -69,13 +75,13 @@ export const TERMS = {
     term: 'Leading Indicator',
     plain: 'An early warning signal for what\'s coming',
     definition: 'Data or signals that predict where the economy is heading before it actually gets there. Smart investors watch leading indicators to stay one step ahead of the market.',
-    example: 'Falling consumer confidence is a leading indicator of an upcoming recession — people start cutting back before the data officially confirms it.',
+    example: 'Falling consumer confidence is a leading indicator of an upcoming downturn — people start cutting back before the data officially confirms it.',
   },
-  sector_expansion: {
-    term: 'Sector Expansion',
+  sector_boom: {
+    term: 'Sector Boom',
     plain: 'A specific industry is booming',
     definition: 'When one industry experiences unusually strong growth — higher demand, rising profits, and climbing valuations across all companies in that sector, even if the wider economy is steady.',
-    example: 'A tech sector expansion lifts all tech companies, even weaker ones that wouldn\'t normally stand out.',
+    example: 'A tech sector boom lifts all tech companies, even weaker ones that wouldn\'t normally stand out.',
   },
   sector_downturn: {
     term: 'Sector Downturn',

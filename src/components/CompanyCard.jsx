@@ -511,16 +511,16 @@ export default function CompanyCard({
           </div>
           <div style={{ textAlign: 'right', marginLeft: 16 }}>
             <button
-              onClick={() => onTermTap && onTermTap('volatility')}
+              onClick={() => onTermTap && onTermTap('stability')}
               style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit', textAlign: 'right', marginBottom: 8 }}
             >
               <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.06em', borderBottom: '1px dashed rgba(255,255,255,0.15)', paddingBottom: 2 }}>
-                Volatility ⓘ
+                Stability ⓘ
               </div>
             </button>
             <StabilityDots profSens={co.profSens} />
             <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', fontWeight: 600, marginTop: 4 }}>
-              {co.profSens <= 0.25 ? 'Very Low' : co.profSens <= 0.50 ? 'Low' : co.profSens <= 0.90 ? 'Medium' : co.profSens <= 1.20 ? 'High' : 'Very High'}
+              {co.profSens <= 0.25 ? 'Very High' : co.profSens <= 0.50 ? 'High' : co.profSens <= 0.90 ? 'Medium' : co.profSens <= 1.20 ? 'Low' : 'Very Low'}
             </div>
           </div>
         </div>

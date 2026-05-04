@@ -3,8 +3,8 @@ import { TERMS } from '../data/terms.js'
 
 const TERM_COLORS = {
   pe_ratio:         { bg: '#FFFBEB', border: '#FCD34D', accent: '#92400E' },
-  recession:        { bg: '#FEF2F2', border: '#FCA5A5', accent: '#991B1B' },
-  expansion:        { bg: '#F0FDF4', border: '#86EFAC', accent: '#14532D' },
+  downturn:         { bg: '#FEF2F2', border: '#FCA5A5', accent: '#991B1B' },
+  boom:             { bg: '#F0FDF4', border: '#86EFAC', accent: '#14532D' },
   stable:           { bg: '#EFF6FF', border: '#93C5FD', accent: '#1E40AF' },
   volatility:       { bg: '#FFF7ED', border: '#FDBA74', accent: '#9A3412' },
   earnings:         { bg: '#F0FDF4', border: '#86EFAC', accent: '#14532D' },
@@ -14,7 +14,7 @@ const TERM_COLORS = {
   declining:        { bg: '#F8FAFC', border: '#CBD5E1', accent: '#475569' },
   speculative:      { bg: '#FDF4FF', border: '#E9D5FF', accent: '#6B21A8' },
   leading_indicator:{ bg: '#FFFBEB', border: '#FCD34D', accent: '#92400E' },
-  sector_expansion: { bg: '#F0FDF4', border: '#86EFAC', accent: '#14532D' },
+  sector_boom:      { bg: '#F0FDF4', border: '#86EFAC', accent: '#14532D' },
   sector_downturn:  { bg: '#FEF2F2', border: '#FCA5A5', accent: '#991B1B' },
 }
 

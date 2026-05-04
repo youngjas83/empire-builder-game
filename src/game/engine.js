@@ -948,13 +948,13 @@ export function getEconomyColor(state) {
 }
 
 export function getEconomyLabel(state) {
-  if (state === 'booming') return '🟢 Expansion'
-  if (state === 'slowdown') return '🔴 Recession'
+  if (state === 'booming') return '🟢 Boom'
+  if (state === 'slowdown') return '🔴 Downturn'
   return '🟡 Stable'
 }
 
 export function getSectorStateLabel(state) {
-  if (state === 'boom') return '🟢 Expansion'
+  if (state === 'boom') return '🟢 Boom'
   if (state === 'downturn') return '🔴 Downturn'
   return '🟡 Normal'
 }

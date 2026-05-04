@@ -118,8 +118,8 @@ function createSetupState() {
 const ECONOMY_EXPLAIN = {
   booming: {
     emoji: '🚀',
-    title: 'Expansion',
-    text: "The economy is in an expansion — businesses earn more, people spend more, and company values rise across the board. Cyclical and speculative stocks benefit most. A great time to buy or expand locations.",
+    title: 'Boom',
+    text: "The economy is booming — businesses earn more, people spend more, and company values rise across the board. Cyclical and speculative stocks benefit most. A great time to buy or expand locations.",
     mood: '#22C55E',
   },
   steady: {
@@ -130,8 +130,8 @@ const ECONOMY_EXPLAIN = {
   },
   slowdown: {
     emoji: '📉',
-    title: 'Recession',
-    text: "The economy is in a recession — businesses earn less, spending drops, and company values fall. Defensive stocks hold up best. Be cautious with new purchases and watch your cyclical holdings closely.",
+    title: 'Downturn',
+    text: "The economy is in a downturn — businesses earn less, spending drops, and company values fall. Defensive stocks hold up best. Be cautious with new purchases and watch your cyclical holdings closely.",
     mood: '#EF4444',
   },
 }

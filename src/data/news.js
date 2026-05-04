@@ -42,7 +42,7 @@ export const ECONOMY_HEADLINES = {
 export const ECONOMY_CHIP_TAKES = {
   booming: "The economy is booming! 🚀 Great time to own growth companies. Just watch for early slowdown signs — good times don't last forever.",
   steady: "Markets are steady. A solid time to research companies and plan your next move!",
-  slowdown: "Slowdown mode! 😬 Stick with defensive companies like BurgerBlast and FreshMart. And watch for sector downturns — they drain company value every turn now!",
+  slowdown: "Economy Downturn! 😬 Stick with defensive companies like BurgerBlast and FreshMart. And watch for sector downturns — they drain company value every turn now!",
   preSlowdown: "⚠️ I'm seeing warning signs in the economy. Think about which companies hold up best in tough times — and which ones to sell before a sector downturn hits!",
   preBoom: "Things look like they might be improving! 🌱 Start thinking about growth companies that could really take off when the boom hits.",
 }

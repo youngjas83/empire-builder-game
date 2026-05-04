@@ -30,8 +30,8 @@ export default function NewsModal({
   }
 
   const visibleSectors = Object.values(SECTORS).filter(s => level >= s.unlockLevel)
-  const econLabel = economy.state === 'booming' ? '🟢 Booming'
-    : economy.state === 'slowdown' ? '🔴 Recession'
+  const econLabel = economy.state === 'booming' ? '🟢 Boom'
+    : economy.state === 'slowdown' ? '🔴 Downturn'
     : '🟡 Stable'
   const econColor = economy.state === 'booming' ? '#4ADE80' : economy.state === 'slowdown' ? '#FCA5A5' : '#FCD34D'
 

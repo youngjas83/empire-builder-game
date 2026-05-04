@@ -87,10 +87,10 @@ function calcReportCard(state, netWorth, profitPerTurn) {
 
 function getSectorCycleBadgeLabel(cycle) {
   if (!cycle) return { text: '🟡 Normal', termId: null }
-  if (cycle.state === 'boom') return { text: '🟢 Expansion', termId: 'sector_expansion' }
+  if (cycle.state === 'boom') return { text: '🟢 Boom', termId: 'sector_boom' }
   if (cycle.state === 'downturn') return { text: '🔴 Downturn', termId: 'sector_downturn' }
   if (cycle.preSignal === 'preSlowdown') return { text: '⚠️ Leading Indicator: Downturn', termId: 'leading_indicator' }
-  if (cycle.preSignal === 'preBoom') return { text: '🌱 Leading Indicator: Expansion', termId: 'leading_indicator' }
+  if (cycle.preSignal === 'preBoom') return { text: '🌱 Leading Indicator: Boom', termId: 'leading_indicator' }
   return { text: '🟡 Normal', termId: null }
 }
 
@@ -561,7 +561,7 @@ export default function EmpireTab({
             // Compact badge label
             const compactBadge = (() => {
               if (!sectorCycle) return null
-              if (sectorState === 'boom') return { text: '🟢 Boom', color: '#4ADE80', termId: 'sector_expansion' }
+              if (sectorState === 'boom') return { text: '🟢 Boom', color: '#4ADE80', termId: 'sector_boom' }
               if (sectorState === 'downturn') return { text: '🔴 Downturn', color: '#FCA5A5', termId: 'sector_downturn' }
               return null
             })()
@@ -873,9 +873,10 @@ export default function EmpireTab({
           100% { opacity: 0 }
         }
         @keyframes turnFlip {
-          0%   { opacity: 0; transform: translateY(7px) scale(0.86) }
-          55%  { opacity: 1; transform: translateY(-2px) scale(1.05) }
-          100% { opacity: 1; transform: translateY(0) scale(1) }
+          0%   { opacity: 0; transform: scale(0.5); color: #FCD34D; background: rgba(252,211,77,0.3); border-color: rgba(252,211,77,0.5) }
+          45%  { opacity: 1; transform: scale(1.22); color: #FCD34D; background: rgba(252,211,77,0.25); border-color: rgba(252,211,77,0.4) }
+          75%  { transform: scale(0.96) }
+          100% { opacity: 1; transform: scale(1); color: rgba(255,255,255,0.7); background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.12) }
         }
         @keyframes econBoomGlow {
           0%, 100% { box-shadow: 0 0 0 0 rgba(74,222,128,0) }

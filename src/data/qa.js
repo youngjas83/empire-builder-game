@@ -43,27 +43,27 @@ export const QA_CATEGORIES = [
     questions: [
       {
         id: 'q_what_is_booming',
-        q: 'What does Economy: Booming mean?',
+        q: 'What does Economy: Boom mean?',
         mood: 'excited',
-        a: "Economy Booming means everything is on fire — in a good way! 🔥 Companies earn higher profits and their Value Multipliers go up. Growth companies especially SURGE in a boom. It's the best time to own risky, fast-growing companies. Just watch for the warning signs — booms always end eventually!",
+        a: "Economy Boom means everything is on fire — in a good way! 🔥 Companies earn higher profits and their Value Multipliers go up. Growth companies especially SURGE in a boom. It's the best time to own risky, fast-growing companies. Just watch for the warning signs — booms always end eventually!",
       },
       {
         id: 'q_what_happens_in_slowdown',
-        q: 'What happens in a Slowdown?',
+        q: 'What happens in a Downturn?',
         mood: 'worried',
-        a: "A Slowdown means the economy is struggling. Company profits drop and multipliers shrink — that means your companies are worth LESS. But here's the key: Defensive companies like BurgerBlast and FreshMart barely feel it. Counter-cyclical companies like FreshMart actually get STRONGER in tough times. Stick with the safe ones!",
+        a: "A Downturn means the economy is struggling. Company profits drop and multipliers shrink — that means your companies are worth LESS. But here's the key: Defensive companies like BurgerBlast and FreshMart barely feel it. Counter-cyclical companies like FreshMart actually get STRONGER in tough times. Stick with the safe ones!",
       },
       {
         id: 'q_what_is_sector_trend',
         q: 'What is a Sector Trend?',
         mood: 'thinking',
-        a: "Each sector (Consumer Market, Real Estate Market, etc.) has its OWN mini economy! A sector can be booming even when the overall economy is in slowdown. That's why owning companies in different sectors is so powerful — if one sector tanks, another might be exploding. Watch the sector status on your Empire tab!",
+        a: "Each sector (Consumer Market, Real Estate Market, etc.) has its OWN mini economy! A sector can boom even when the overall economy is in a downturn. That's why owning companies in different sectors is so powerful — if one sector tanks, another might be exploding. Watch the sector status on your Empire tab!",
       },
       {
         id: 'q_why_did_company_lose_value',
         q: 'Why did my company lose value?',
         mood: 'thinking',
-        a: "A few possibilities: 1) The economy moved into a Slowdown — all companies feel this. 2) Your company's sector had a downturn — sector downturns drain value every turn. 3) The company has a 📉 Fading Out badge — it loses value permanently. 4) The Value Multiplier dropped. The company card will now show you exactly why! Check it for the full story.",
+        a: "A few possibilities: 1) The economy moved into a Downturn — all companies feel this. 2) Your company's sector had a downturn — sector downturns drain value every turn. 3) The company has a 📉 Fading Out badge — it loses value permanently. 4) The Value Multiplier dropped. The company card will now show you exactly why! Check it for the full story.",
       },
     ],
   },
@@ -115,15 +115,15 @@ export const QA_CATEGORIES = [
       },
       {
         id: 'q_what_to_do_in_slowdown',
-        q: 'What should I do in a Slowdown?',
+        q: 'What should I do in a Downturn?',
         mood: 'worried',
-        a: "Slowdown survival guide: 1) Keep your Defensive companies (BurgerBlast, FreshMart, SkyFlats) — they barely feel it. 2) Think about selling your Cyclical and Speculative companies before they drop more. 3) Cash earns interest — holding some cash is smart right now. 4) Watch the news for recovery signals. Slowdowns always end — get ready to pounce when they do!",
+        a: "Downturn survival guide: 1) Keep your Defensive companies (BurgerBlast, FreshMart, SkyFlats) — they barely feel it. 2) Think about selling your Cyclical and Speculative companies before they drop more. 3) Cash earns interest — holding some cash is smart right now. 4) Watch the news for recovery signals. Downturns always end — get ready to pounce when they do!",
       },
       {
         id: 'q_hold_cash_or_invest',
         q: 'Should I hold cash or invest?',
         mood: 'thinking',
-        a: "Both! Cash earns interest every turn — free money just for holding it. But companies earn MUCH more than interest. The smart play: keep some cash as a cushion so you can grab great deals when they appear (especially Flash Sales!), and invest the rest in great companies. More cash during slowdowns, more invested during booms.",
+        a: "Both! Cash earns interest every turn — free money just for holding it. But companies earn MUCH more than interest. The smart play: keep some cash as a cushion so you can grab great deals when they appear (especially Flash Sales!), and invest the rest in great companies. More cash during downturns, more invested during booms.",
       },
       {
         id: 'q_how_to_grow_fastest',
