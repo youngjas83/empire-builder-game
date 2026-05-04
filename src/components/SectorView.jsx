@@ -73,6 +73,13 @@ export default function SectorView({
         overflowY: 'auto',
       }}
     >
+      <style>{`
+        @keyframes flashSalePulse {
+          0%, 100% { box-shadow: 0 4px 18px rgba(252,211,77,0.12), 0 0 0 0px rgba(252,211,77,0.0) }
+          50%       { box-shadow: 0 4px 28px rgba(252,211,77,0.35), 0 0 0 3px rgba(252,211,77,0.18) }
+        }
+        .flashSalePulse { animation: flashSalePulse 1.6s ease-in-out infinite; }
+      `}</style>
       {/* Header */}
       <div style={{
         background: `linear-gradient(150deg, ${sector.color}CC 0%, ${sector.color}99 100%)`,
@@ -188,6 +195,7 @@ export default function SectorView({
             <button
               key={co.id}
               onClick={() => onSelectCompany(co.id)}
+              className={isOnFlashSale ? 'flashSalePulse' : ''}
               style={{
                 width: '100%',
                 background: cardBg,
@@ -200,8 +208,6 @@ export default function SectorView({
                 textAlign: 'left',
                 boxShadow: owned
                   ? `0 4px 18px ${co.gradientTo}20`
-                  : isOnFlashSale
-                  ? '0 4px 18px rgba(252,211,77,0.12)'
                   : 'none',
                 transition: 'all 0.15s',
               }}

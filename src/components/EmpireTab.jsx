@@ -137,8 +137,15 @@ export default function EmpireTab({
   const [expandedCard, setExpandedCard] = useState(null)
   const [cascadeParticles, setCascadeParticles] = useState([])
   const [muted, setMuted] = useState(() => SFX.isMuted())
+  const [levelUpFlash, setLevelUpFlash] = useState(false)
+  const [cashPulsing, setCashPulsing] = useState(false)
+  const [cashDelta, setCashDelta] = useState(null)
+  const [bouncingSectors, setBouncingSectors] = useState(new Set())
+  const [bounceKey, setBounceKey] = useState(0)
   const sectorTileRefs = useRef({})
   const prevTurnRef = useRef(null)
+  const prevLevelRef = useRef(null)
+  const prevCashRef = useRef(null)
 
   function toggleMute() {
     const next = !muted
@@ -176,10 +183,48 @@ export default function EmpireTab({
     })
 
     if (particles.length === 0) return
+
+    const profitSectors = new Set()
+    Object.entries(profits).forEach(([companyId, earned]) => {
+      if (earned <= 0) return
+      const co = COMPANIES.find(c => c.id === companyId)
+      if (co) profitSectors.add(co.sector)
+    })
+    setBouncingSectors(profitSectors)
+    setBounceKey(k => k + 1)
+    const bounceTimer = setTimeout(() => setBouncingSectors(new Set()), 600)
+
     setCascadeParticles(particles)
     const timer = setTimeout(() => setCascadeParticles([]), particles.length * 110 + 1500)
-    return () => clearTimeout(timer)
+    return () => { clearTimeout(timer); clearTimeout(bounceTimer) }
   }, [turn])
+
+  // ── Level-up flash ────────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (prevLevelRef.current === null) { prevLevelRef.current = level; return }
+    if (level > prevLevelRef.current) {
+      setLevelUpFlash(true)
+      const t = setTimeout(() => setLevelUpFlash(false), 900)
+      prevLevelRef.current = level
+      return () => clearTimeout(t)
+    }
+    prevLevelRef.current = level
+  }, [level])
+
+  // ── Cash gain pulse + delta flash ─────────────────────────────────────────────
+  useEffect(() => {
+    if (prevCashRef.current === null) { prevCashRef.current = cash; return }
+    if (cash > prevCashRef.current) {
+      const delta = cash - prevCashRef.current
+      setCashDelta(delta)
+      setCashPulsing(true)
+      const t1 = setTimeout(() => setCashPulsing(false), 700)
+      const t2 = setTimeout(() => setCashDelta(null), 1800)
+      prevCashRef.current = cash
+      return () => { clearTimeout(t1); clearTimeout(t2) }
+    }
+    prevCashRef.current = cash
+  }, [cash])
 
   const netWorth = calcNetWorth(cash, portfolio, companyStates)
   const profitPerTurn = calcProfitPerTurn(portfolio, companyStates)
@@ -250,12 +295,15 @@ export default function EmpireTab({
             </button>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <div style={{
-              background: 'rgba(255,255,255,0.08)',
-              border: '1px solid rgba(255,255,255,0.12)',
-              borderRadius: 20, padding: '4px 12px',
-              fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.7)',
-            }}>
+            <div
+              key={turn}
+              style={{
+                background: 'rgba(255,255,255,0.08)',
+                border: '1px solid rgba(255,255,255,0.12)',
+                borderRadius: 20, padding: '4px 12px',
+                fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.7)',
+                animation: 'turnFlip 0.38s ease-out',
+              }}>
               Turn {turn}
             </div>
             <button
@@ -294,6 +342,7 @@ export default function EmpireTab({
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', position: 'relative' }}>
           <button
             onClick={onEconomyPillTap}
+            className={economy.state === 'booming' ? 'econBoomPulse' : economy.state === 'slowdown' ? 'econSlowdownPulse' : ''}
             style={{
               background: econColor + '25',
               border: `1.5px solid ${econColor}55`,
@@ -307,13 +356,28 @@ export default function EmpireTab({
             {getEconomyLabel(economy.state)}
             <span style={{ fontSize: 10, opacity: 0.6 }}>ⓘ</span>
           </button>
-          <div style={{
-            background: 'rgba(255,255,255,0.08)',
-            border: '1px solid rgba(255,255,255,0.12)',
-            borderRadius: 20, padding: '5px 12px',
-            fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.8)',
-          }}>
+          <div
+            key={cashPulsing ? 'pulse' : 'idle'}
+            style={{
+              background: 'rgba(255,255,255,0.08)',
+              border: '1px solid rgba(255,255,255,0.12)',
+              borderRadius: 20, padding: '5px 12px',
+              fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.8)',
+              animation: cashPulsing ? 'cashPulse 0.7s ease-out' : 'none',
+              lineHeight: 1.2,
+            }}>
             💵 {formatMoney(animCash)}
+            {cashDelta !== null && (
+              <span
+                key={cashDelta}
+                style={{
+                  display: 'block', fontSize: 10, fontWeight: 900,
+                  color: '#4ADE80', marginTop: 1,
+                  animation: 'cashDeltaFade 1.8s ease-out forwards',
+                }}>
+                +{formatMoney(cashDelta)}
+              </span>
+            )}
           </div>
           {profitPerTurn > 0 && (
             <div style={{
@@ -323,6 +387,16 @@ export default function EmpireTab({
               fontSize: 12, fontWeight: 700, color: '#4ADE80',
             }}>
               +{formatMoney(animProfitPerTurn)}/turn
+            </div>
+          )}
+          {state.profitStreak >= 3 && (
+            <div style={{
+              background: 'rgba(251,146,60,0.2)',
+              border: '1.5px solid rgba(251,146,60,0.45)',
+              borderRadius: 20, padding: '5px 12px',
+              fontSize: 12, fontWeight: 800, color: '#FB923C',
+            }}>
+              🔥 {state.profitStreak}
             </div>
           )}
         </div>
@@ -466,27 +540,6 @@ export default function EmpireTab({
           )
         })()}
 
-        {/* Idle cash warning */}
-        {companiesOwned > 0 && netWorth > 0 && cash / netWorth > 0.35 && (
-          <div style={{
-            background: 'rgba(252,211,77,0.07)',
-            border: '1.5px solid rgba(252,211,77,0.25)',
-            borderRadius: 16, padding: '13px 14px',
-            marginBottom: 10,
-            display: 'flex', alignItems: 'flex-start', gap: 12,
-          }}>
-            <span style={{ fontSize: 26, flexShrink: 0 }}>💤</span>
-            <div>
-              <div style={{ fontSize: 13, fontWeight: 800, color: '#FCD34D', marginBottom: 2 }}>
-                {formatMoney(cash)} is sitting idle
-              </div>
-              <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(252,211,77,0.7)', lineHeight: 1.45 }}>
-                That's {Math.round((cash / netWorth) * 100)}% of your empire doing nothing. Put it to work!
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Sector tiles — 2-column grid */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
           {Object.values(SECTORS).map(sector => {
@@ -510,8 +563,6 @@ export default function EmpireTab({
               if (!sectorCycle) return null
               if (sectorState === 'boom') return { text: '🟢 Boom', color: '#4ADE80', termId: 'sector_expansion' }
               if (sectorState === 'downturn') return { text: '🔴 Downturn', color: '#FCA5A5', termId: 'sector_downturn' }
-              if (preSignal === 'preSlowdown') return { text: '⚠️ Warning', color: '#FCD34D', termId: 'leading_indicator' }
-              if (preSignal === 'preBoom') return { text: '🌱 Rising', color: '#4ADE80', termId: 'leading_indicator' }
               return null
             })()
 
@@ -529,19 +580,12 @@ export default function EmpireTab({
                 boxShadow: 'none',
                 nameColor: 'rgba(255,255,255,0.6)',
                 opacity: 0.8,
-                animClass: null,
-              }
-              if (preSignal === 'preSlowdown') return {
-                background: hasOwned ? 'rgba(252,211,77,0.06)' : 'rgba(255,255,255,0.03)',
-                border: '2px solid rgba(252,211,77,0.2)',
-                boxShadow: 'none',
-                nameColor: '#E2E8F0',
-                animClass: null,
+                animClass: 'sectorDownturnJitter',
               }
               return {
-                background: hasOwned ? `linear-gradient(135deg, ${sector.color}12, rgba(255,255,255,0.04))` : 'rgba(255,255,255,0.04)',
-                border: `2px solid ${hasOwned ? sector.color + '40' : 'rgba(255,255,255,0.08)'}`,
-                boxShadow: hasOwned ? `0 4px 18px ${sector.color}18` : 'none',
+                background: hasOwned ? `linear-gradient(135deg, ${sector.color}28, ${sector.color}0a)` : 'rgba(255,255,255,0.04)',
+                border: `2px solid ${hasOwned ? sector.color + '60' : 'rgba(255,255,255,0.08)'}`,
+                boxShadow: hasOwned ? `0 4px 18px ${sector.color}28` : 'none',
                 nameColor: '#E2E8F0',
                 animClass: null,
               }
@@ -587,8 +631,16 @@ export default function EmpireTab({
                   opacity: tileStyle.opacity || 1,
                   minHeight: 110,
                   transition: 'all 0.2s',
+                  position: 'relative', overflow: 'hidden',
                 }}
               >
+                {sectorState === 'boom' && (
+                  <div className="sectorBoomShimmer" style={{
+                    position: 'absolute', top: 0, bottom: 0, width: '55%',
+                    background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.09), transparent)',
+                    transform: 'skewX(-15deg)', pointerEvents: 'none',
+                  }} />
+                )}
                 {/* Top row: emoji + badge */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <span style={{
@@ -624,7 +676,10 @@ export default function EmpireTab({
 
                 {/* Owned company emojis */}
                 {hasOwned ? (
-                  <div style={{ display: 'flex', gap: 3, flexWrap: 'wrap', alignItems: 'center' }}>
+                  <div
+                    key={`${sector.id}-emojis-${bouncingSectors.has(sector.id) ? bounceKey : 'idle'}`}
+                    className={bouncingSectors.has(sector.id) ? 'emojiPop' : ''}
+                    style={{ display: 'flex', gap: 3, flexWrap: 'wrap', alignItems: 'center' }}>
                     {ownedEmojis.map((emoji, i) => (
                       <span key={i} style={{
                         fontSize: 14,
@@ -793,6 +848,58 @@ export default function EmpireTab({
           50%       { box-shadow: 0 6px 32px rgba(34,197,94,0.28) }
         }
         .sectorBoomPulse { animation: boomPulse 2.2s ease-in-out infinite; }
+        @keyframes sectorBoomShimmer {
+          0%   { left: -60% }
+          100% { left: 160% }
+        }
+        .sectorBoomShimmer { position: absolute; animation: sectorBoomShimmer 2.6s ease-in-out infinite; }
+        @keyframes sectorDownturnJitter {
+          0%, 86%, 100% { transform: translateX(0) }
+          88%  { transform: translateX(-2px) }
+          90%  { transform: translateX(2px) }
+          92%  { transform: translateX(-2px) }
+          94%  { transform: translateX(1px) }
+          96%  { transform: translateX(0) }
+        }
+        .sectorDownturnJitter { animation: sectorDownturnJitter 4.5s ease-in-out infinite; }
+        @keyframes cashPulse {
+          0%   { background: rgba(74,222,128,0.32); border-color: rgba(74,222,128,0.5); transform: scale(1.06) }
+          60%  { background: rgba(74,222,128,0.15); transform: scale(1.02) }
+          100% { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.12); transform: scale(1) }
+        }
+        @keyframes levelUpFlash {
+          0%   { opacity: 1 }
+          35%  { opacity: 0.85 }
+          100% { opacity: 0 }
+        }
+        @keyframes turnFlip {
+          0%   { opacity: 0; transform: translateY(7px) scale(0.86) }
+          55%  { opacity: 1; transform: translateY(-2px) scale(1.05) }
+          100% { opacity: 1; transform: translateY(0) scale(1) }
+        }
+        @keyframes econBoomGlow {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(74,222,128,0) }
+          50%       { box-shadow: 0 0 0 5px rgba(74,222,128,0.22) }
+        }
+        @keyframes econSlowdownGlow {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0) }
+          50%       { box-shadow: 0 0 0 5px rgba(239,68,68,0.22) }
+        }
+        .econBoomPulse     { animation: econBoomGlow 2s ease-in-out infinite; }
+        .econSlowdownPulse { animation: econSlowdownGlow 2.4s ease-in-out infinite; }
+        @keyframes emojiPop {
+          0%   { transform: scale(1) }
+          35%  { transform: scale(1.45) }
+          65%  { transform: scale(0.9) }
+          100% { transform: scale(1) }
+        }
+        .emojiPop { animation: emojiPop 0.5s ease-out; }
+        @keyframes cashDeltaFade {
+          0%   { opacity: 0; transform: translateY(3px) }
+          18%  { opacity: 1; transform: translateY(0) }
+          72%  { opacity: 1; transform: translateY(0) }
+          100% { opacity: 0; transform: translateY(-3px) }
+        }
         @keyframes profitFloat {
           0%   { transform: translateY(0)    scale(0.75); opacity: 0; }
           12%  { transform: translateY(-10px) scale(1.12); opacity: 1; }
@@ -800,6 +907,15 @@ export default function EmpireTab({
           100% { transform: translateY(-92px) scale(0.95); opacity: 0; }
         }
       `}</style>
+
+      {/* ── Level-up flash overlay ── */}
+      {levelUpFlash && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 600, pointerEvents: 'none',
+          background: 'rgba(252,211,77,0.22)',
+          animation: 'levelUpFlash 0.9s ease-out forwards',
+        }} />
+      )}
 
       {/* ── Profit cascade overlay ── */}
       {cascadeParticles.length > 0 && (

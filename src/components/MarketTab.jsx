@@ -20,6 +20,13 @@ export default function MarketTab({
   const netWorth = calcNetWorth(cash, portfolio, companyStates)
   const ownedIds = Object.keys(portfolio)
 
+  // Stable sort: original game-start company value, never changes with market moves
+  const sortedOwnedIds = [...ownedIds].sort((a, b) => {
+    const coA = COMPANIES.find(c => c.id === a)
+    const coB = COMPANIES.find(c => c.id === b)
+    return ((coA ? coA.baseProfit * coA.baseMultiplier : 0) - (coB ? coB.baseProfit * coB.baseMultiplier : 0))
+  })
+
   const startNW = netWorthHistory[0] || 10000000
   const nwGrowth = netWorth - startNW
   const nwGrowthPct = startNW > 0 ? Math.round((nwGrowth / startNW) * 100) : 0
@@ -181,7 +188,7 @@ export default function MarketTab({
           )}
           {(() => {
             let portfolioTotal = 0
-            const rows = ownedIds.map(id => {
+            const rows = sortedOwnedIds.map(id => {
               const co = COMPANIES.find(c => c.id === id)
               const cs = companyStates[id]
               const entry = portfolio[id]
@@ -247,7 +254,7 @@ export default function MarketTab({
             <div style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12 }}>
               📊 Portfolio ROI
             </div>
-            {ownedIds.map(id => {
+            {sortedOwnedIds.map(id => {
               const co = COMPANIES.find(c => c.id === id)
               const cs = companyStates[id]
               const entry = portfolio[id]
@@ -275,7 +282,23 @@ export default function MarketTab({
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         <span style={{ fontSize: 22 }}>{co.emoji}</span>
                         <div>
-                          <div style={{ fontSize: 14, fontWeight: 800, color: '#E2E8F0' }}>{co.name}</div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <div style={{ fontSize: 14, fontWeight: 800, color: '#E2E8F0' }}>{co.name}</div>
+                            {valueChange !== 0 && (() => {
+                              const pct = totalInvested > 0 ? Math.round((valueChange / totalInvested) * 100) : 0
+                              const up = valueChange > 0
+                              return (
+                                <span style={{
+                                  fontSize: 10, fontWeight: 800,
+                                  color: up ? '#4ADE80' : '#FCA5A5',
+                                  background: up ? 'rgba(74,222,128,0.12)' : 'rgba(239,68,68,0.12)',
+                                  padding: '1px 5px', borderRadius: 5,
+                                }}>
+                                  {up ? '↑' : '↓'} value {up ? '+' : ''}{pct}%
+                                </span>
+                              )
+                            })()}
+                          </div>
                           <div style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.35)' }}>
                             {entry.locations} location{entry.locations !== 1 ? 's' : ''}
                           </div>
@@ -326,7 +349,7 @@ export default function MarketTab({
 
             {(() => {
               let totalInv = 0, totalVal = 0, totalProf = 0
-              ownedIds.forEach(id => {
+              sortedOwnedIds.forEach(id => {
                 const cs = companyStates[id]; const entry = portfolio[id]
                 if (!cs || !entry) return
                 const locMult = calcLocationsMultiplier(entry.locations)
@@ -378,11 +401,6 @@ export default function MarketTab({
             </div>
             <div>
               <div style={{ fontSize: 20, fontWeight: 900, color: econColor }}>{getEconomyLabel(economy.state)}</div>
-              {(economy.preSignal === 'preSlowdown' || economy.preSignal === 'preBoom') && (
-                <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>
-                  {economy.preSignal === 'preSlowdown' ? '⚠️ Leading Indicator: Recession ahead' : '🌱 Leading Indicator: Expansion ahead'}
-                </div>
-              )}
             </div>
           </div>
         </div>
@@ -410,11 +428,6 @@ export default function MarketTab({
                     {sector.name}
                     {!isUnlocked && <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', marginLeft: 6 }}>🔒 locked</span>}
                   </div>
-                  {isUnlocked && cycle && (cycle.preSignal === 'preSlowdown' || cycle.preSignal === 'preBoom') && (
-                    <div style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.35)', marginTop: 1 }}>
-                      {cycle.preSignal === 'preSlowdown' ? '⚠️ Leading Indicator: Downturn' : '🌱 Leading Indicator: Expansion'}
-                    </div>
-                  )}
                 </div>
                 {isUnlocked && (
                   <div style={{

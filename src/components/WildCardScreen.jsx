@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import Chip from './Chip.jsx'
 import { formatMoney } from '../game/engine.js'
 
@@ -45,6 +45,7 @@ export default function WildCardScreen({ wildCard, onContinue, onOpportunityAcce
     const headerText = subtypeLabels[wildCard.subtype] || '💡 OPPORTUNITY'
 
     const canAfford = wildCard.subtype !== 'product_launch' || (cash || 0) >= (wildCard.launchCost || 0)
+    const [confirmingMA, setConfirmingMA] = useState(false)
 
     return (
       <div style={{
@@ -120,43 +121,94 @@ export default function WildCardScreen({ wildCard, onContinue, onOpportunityAcce
 
         {/* Choice buttons */}
         <div style={{ width: '100%', maxWidth: 340, display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <button
-            onClick={canAfford ? onOpportunityAccept : undefined}
-            style={{
-              padding: '15px 20px',
-              background: canAfford
-                ? 'linear-gradient(135deg, #92400E, #D97706)'
-                : 'rgba(255,255,255,0.08)',
-              color: canAfford ? '#fff' : 'rgba(255,255,255,0.3)',
-              border: canAfford ? 'none' : '1px solid rgba(255,255,255,0.12)',
-              borderRadius: 16,
-              fontSize: 16, fontWeight: 900,
-              fontFamily: 'inherit',
-              cursor: canAfford ? 'pointer' : 'not-allowed',
-              boxShadow: canAfford ? '0 6px 24px rgba(217,119,6,0.45)' : 'none',
-              textAlign: 'center',
-            }}
-          >
-            {wildCard.acceptLabel}
-            <div style={{ fontSize: 12, fontWeight: 600, opacity: 0.8, marginTop: 3 }}>
-              {canAfford ? wildCard.acceptDetail : "Can't afford right now"}
-            </div>
-          </button>
 
-          <button
-            onClick={onOpportunityDecline}
-            style={{
-              padding: '13px 20px',
-              background: 'rgba(255,255,255,0.06)',
-              color: 'rgba(255,255,255,0.6)',
-              border: '1px solid rgba(255,255,255,0.12)',
-              borderRadius: 16,
-              fontSize: 15, fontWeight: 700,
-              fontFamily: 'inherit', cursor: 'pointer',
-            }}
-          >
-            {wildCard.declineLabel}
-          </button>
+          {/* M&A two-step confirmation */}
+          {wildCard.subtype === 'ma_offer' && confirmingMA ? (
+            <div style={{
+              background: 'rgba(217,119,6,0.12)',
+              border: '2px solid rgba(217,119,6,0.4)',
+              borderRadius: 18, padding: '16px 18px',
+            }}>
+              <div style={{ fontSize: 15, fontWeight: 800, color: '#FCD34D', marginBottom: 4, textAlign: 'center' }}>
+                Confirm — sell {wildCard.companyName}?
+              </div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.6)', textAlign: 'center', marginBottom: 14 }}>
+                You'll receive {formatMoney(wildCard.offerPrice)} and lose the company permanently.
+              </div>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button
+                  onClick={onOpportunityAccept}
+                  style={{
+                    flex: 1, padding: '13px',
+                    background: 'linear-gradient(135deg, #92400E, #D97706)',
+                    color: '#fff', border: 'none', borderRadius: 14,
+                    fontSize: 15, fontWeight: 900,
+                    fontFamily: 'inherit', cursor: 'pointer',
+                    boxShadow: '0 4px 16px rgba(217,119,6,0.4)',
+                  }}
+                >
+                  ✓ Confirm Sale
+                </button>
+                <button
+                  onClick={() => setConfirmingMA(false)}
+                  style={{
+                    flex: 1, padding: '13px',
+                    background: 'rgba(255,255,255,0.08)',
+                    color: 'rgba(255,255,255,0.7)',
+                    border: '1px solid rgba(255,255,255,0.15)',
+                    borderRadius: 14,
+                    fontSize: 15, fontWeight: 700,
+                    fontFamily: 'inherit', cursor: 'pointer',
+                  }}
+                >
+                  ← Back
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={() => {
+                if (!canAfford) return
+                if (wildCard.subtype === 'ma_offer') { setConfirmingMA(true) } else { onOpportunityAccept() }
+              }}
+              style={{
+                padding: '15px 20px',
+                background: canAfford
+                  ? 'linear-gradient(135deg, #92400E, #D97706)'
+                  : 'rgba(255,255,255,0.08)',
+                color: canAfford ? '#fff' : 'rgba(255,255,255,0.3)',
+                border: canAfford ? 'none' : '1px solid rgba(255,255,255,0.12)',
+                borderRadius: 16,
+                fontSize: 16, fontWeight: 900,
+                fontFamily: 'inherit',
+                cursor: canAfford ? 'pointer' : 'not-allowed',
+                boxShadow: canAfford ? '0 6px 24px rgba(217,119,6,0.45)' : 'none',
+                textAlign: 'center',
+              }}
+            >
+              {wildCard.acceptLabel}
+              <div style={{ fontSize: 12, fontWeight: 600, opacity: 0.8, marginTop: 3 }}>
+                {canAfford ? wildCard.acceptDetail : "Can't afford right now"}
+              </div>
+            </button>
+          )}
+
+          {!confirmingMA && (
+            <button
+              onClick={onOpportunityDecline}
+              style={{
+                padding: '13px 20px',
+                background: 'rgba(255,255,255,0.06)',
+                color: 'rgba(255,255,255,0.6)',
+                border: '1px solid rgba(255,255,255,0.12)',
+                borderRadius: 16,
+                fontSize: 15, fontWeight: 700,
+                fontFamily: 'inherit', cursor: 'pointer',
+              }}
+            >
+              {wildCard.declineLabel}
+            </button>
+          )}
         </div>
       </div>
     )

@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { BADGES, COMPANIES, SECTORS } from '../data/companies.js'
 import { formatMoney, calcLocationsMultiplier } from '../game/engine.js'
 import Sparkline from './Sparkline.jsx'
@@ -48,6 +48,7 @@ export default function CompanyCard({
   const co = COMPANIES.find(c => c.id === companyId)
   if (!co) return null
 
+  const [buyRipple, setBuyRipple] = useState(null)
   const touchStartRef = React.useRef(null)
 
   function handleTouchStart(e) {
@@ -88,8 +89,16 @@ export default function CompanyCard({
 
   const sectorCycle = sectorCycles && sectorCycles[co.sector]
   const econState = economy && economy.state
+  const activeBoost = owned && owned.profitBoost && owned.profitBoost.turnsLeft > 0 ? owned.profitBoost : null
   let contextBanner = null
-  if (sectorCycle && sectorCycle.state === 'downturn') {
+  if (activeBoost) {
+    contextBanner = {
+      text: `🚀 Product Launch Active — +25% profit · ${activeBoost.turnsLeft} turn${activeBoost.turnsLeft !== 1 ? 's' : ''} remaining`,
+      color: '#FCD34D',
+      bg: 'rgba(252,211,77,0.10)',
+      border: 'rgba(252,211,77,0.35)',
+    }
+  } else if (sectorCycle && sectorCycle.state === 'downturn') {
     contextBanner = { text: `⚠️ ${sectorData ? sectorData.name : 'Sector'} slump is draining value each turn`, color: '#FCA5A5', bg: 'rgba(239,68,68,0.12)', border: 'rgba(239,68,68,0.25)' }
   } else if (sectorCycle && sectorCycle.state === 'boom') {
     contextBanner = { text: `🚀 ${sectorData ? sectorData.name : 'Sector'} boom is boosting this company!`, color: '#4ADE80', bg: 'rgba(34,197,94,0.1)', border: 'rgba(34,197,94,0.25)' }
@@ -100,6 +109,7 @@ export default function CompanyCard({
   } else if (co.badge === 'fadingOut') {
     contextBanner = { text: '📉 This company fades every turn — even in good times', color: 'rgba(255,255,255,0.4)', bg: 'rgba(255,255,255,0.05)', border: 'rgba(255,255,255,0.1)' }
   }
+
 
   const riskTier = (() => {
     if (co.badge === 'fadingOut') return 'fading'
@@ -128,6 +138,10 @@ export default function CompanyCard({
         @keyframes wildGlow {
           0%, 100% { box-shadow: inset 0 0 60px rgba(124,58,237,0.20) }
           50%       { box-shadow: inset 0 0 80px rgba(239,68,68,0.30) }
+        }
+        @keyframes buyRipple {
+          0%   { transform: translate(-50%,-50%) scale(0); opacity: 0.55 }
+          100% { transform: translate(-50%,-50%) scale(5); opacity: 0 }
         }
       `}</style>
 
@@ -193,11 +207,25 @@ export default function CompanyCard({
             position: 'absolute',
             top: 'calc(env(safe-area-inset-top, 0px) + 12px)',
             right: 12,
-            background: 'rgba(34,197,94,0.85)', color: '#fff',
-            padding: '4px 12px', borderRadius: 20,
-            fontSize: 11, fontWeight: 900, letterSpacing: '0.05em',
+            display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 5,
           }}>
-            ✓ OWNED
+            <div style={{
+              background: 'rgba(34,197,94,0.85)', color: '#fff',
+              padding: '4px 12px', borderRadius: 20,
+              fontSize: 11, fontWeight: 900, letterSpacing: '0.05em',
+            }}>
+              ✓ OWNED
+            </div>
+            {activeBoost && (
+              <div style={{
+                background: 'rgba(252,211,77,0.92)', color: '#1C0A0A',
+                padding: '4px 10px', borderRadius: 20,
+                fontSize: 11, fontWeight: 900, letterSpacing: '0.03em',
+                boxShadow: '0 0 10px rgba(252,211,77,0.5)',
+              }}>
+                🚀 BOOST ×{activeBoost.turnsLeft}
+              </div>
+            )}
           </div>
         )}
 
@@ -522,7 +550,15 @@ export default function CompanyCard({
           {!owned && (
             <div style={{ flex: 1 }}>
               <button
-                onClick={() => canAfford && !actionTaken && onBuy && onBuy(companyId)}
+                onClick={e => {
+                  if (!canAfford || actionTaken || !onBuy) return
+                  const rect = e.currentTarget.getBoundingClientRect()
+                  const rx = e.clientX - rect.left
+                  const ry = e.clientY - rect.top
+                  setBuyRipple({ x: rx, y: ry })
+                  setTimeout(() => setBuyRipple(null), 650)
+                  onBuy(companyId)
+                }}
                 disabled={!!actionTaken || !canAfford}
                 style={{
                   width: '100%', padding: '15px',
@@ -538,8 +574,19 @@ export default function CompanyCard({
                   fontFamily: 'inherit',
                   cursor: (actionTaken || !canAfford) ? 'default' : 'pointer',
                   boxShadow: (actionTaken || !canAfford) ? 'none' : '0 4px 18px rgba(34,197,94,0.4)',
+                  position: 'relative', overflow: 'hidden',
                 }}
               >
+                {buyRipple && (
+                  <div style={{
+                    position: 'absolute',
+                    left: buyRipple.x, top: buyRipple.y,
+                    width: 48, height: 48, borderRadius: '50%',
+                    background: 'rgba(255,255,255,0.38)',
+                    animation: 'buyRipple 0.65s ease-out forwards',
+                    pointerEvents: 'none',
+                  }} />
+                )}
                 {actionTaken
                   ? '✓ Done this turn'
                   : !canAfford

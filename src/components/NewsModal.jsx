@@ -30,20 +30,15 @@ export default function NewsModal({
   }
 
   const visibleSectors = Object.values(SECTORS).filter(s => level >= s.unlockLevel)
-  const econState = economy.preSignal || economy.state
-  const econLabel = econState === 'booming' ? '🟢 Booming'
-    : econState === 'slowdown' ? '🔴 Slowdown'
-    : econState === 'preSlowdown' ? '🟡 Steady · ⚠️ Slowing'
-    : econState === 'preBoom' ? '🟡 Steady · 🌱 Recovering'
-    : '🟡 Steady'
+  const econLabel = economy.state === 'booming' ? '🟢 Booming'
+    : economy.state === 'slowdown' ? '🔴 Recession'
+    : '🟡 Stable'
   const econColor = economy.state === 'booming' ? '#4ADE80' : economy.state === 'slowdown' ? '#FCA5A5' : '#FCD34D'
 
   function getSectorCycleLabel(cycle) {
     if (!cycle) return '🟡 Normal'
     if (cycle.state === 'boom') return '🟢 Boom'
     if (cycle.state === 'downturn') return '🔴 Downturn'
-    if (cycle.preSignal === 'preSlowdown') return '🟡 Normal · ⚠️ Slowing'
-    if (cycle.preSignal === 'preBoom') return '🟡 Normal · 🌱 Recovering'
     return '🟡 Normal'
   }
 
@@ -260,7 +255,7 @@ export default function NewsModal({
                     borderRadius: 6, padding: '2px 8px',
                     textTransform: 'uppercase', letterSpacing: '0.08em',
                   }}>
-                    📣 {isPos ? '+6% next turn' : isNeg ? '−6% next turn' : 'Company News'}
+                    📣 {isPos ? 'Good News' : isNeg ? 'Bad News' : 'Company News'}
                   </div>
                   {co && (
                     <span style={{ fontSize: 11, fontWeight: 600, color: tagColor, opacity: 0.7 }}>
