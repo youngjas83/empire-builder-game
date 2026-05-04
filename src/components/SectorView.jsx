@@ -1,6 +1,6 @@
 import React, { useRef } from 'react'
 import { BADGES, COMPANIES, SECTORS } from '../data/companies.js'
-import { formatMoney, getSectorStateColor } from '../game/engine.js'
+import { formatMoney, getSectorStateColor, calcLocationsMultiplier } from '../game/engine.js'
 
 function getCycleBadgeLabel(cycle) {
   if (!cycle) return '🟡 Normal'
@@ -171,11 +171,15 @@ export default function SectorView({
       <div style={{ padding: '12px 12px 100px' }}>
         {companies.map(co => {
           const cs = companyStates[co.id] || { profit: co.baseProfit, multiplier: co.baseMultiplier }
-          const baseValue = Math.round(cs.profit * cs.multiplier)
           const owned = portfolio[co.id]
+          const locMult = owned ? calcLocationsMultiplier(owned.locations) : 1
+          const currentValue = Math.round(cs.profit * cs.multiplier * locMult)
+          const baseValue = Math.round(cs.profit * cs.multiplier)
           const isOnFlashSale = !owned && flashSale && flashSale.companyId === co.id
           const flashDiscount = isOnFlashSale ? flashSale.discount : 0
           const value = isOnFlashSale ? Math.round(baseValue * (1 - flashDiscount)) : baseValue
+          const totalInvested = owned ? (owned.purchasePrice || 0) + (owned.locationSpend || 0) : 0
+          const valueChangePct = owned && totalInvested > 0 ? Math.round((currentValue - totalInvested) / totalInvested * 100) : null
 
           const badge = BADGES[co.badge]
           const pillStyle = BADGE_PILL_COLORS[co.badge] || { color: 'rgba(255,255,255,0.4)', bg: 'rgba(255,255,255,0.06)', border: 'rgba(255,255,255,0.12)' }
@@ -233,6 +237,17 @@ export default function SectorView({
                         border: '1px solid rgba(99,102,241,0.35)',
                       }}>
                         OWNED
+                      </span>
+                    )}
+                    {valueChangePct !== null && valueChangePct !== 0 && (
+                      <span style={{
+                        fontSize: 10, fontWeight: 800,
+                        color: valueChangePct > 0 ? '#4ADE80' : '#FCA5A5',
+                        background: valueChangePct > 0 ? 'rgba(74,222,128,0.15)' : 'rgba(239,68,68,0.15)',
+                        padding: '2px 7px', borderRadius: 6,
+                        border: `1px solid ${valueChangePct > 0 ? 'rgba(74,222,128,0.3)' : 'rgba(239,68,68,0.3)'}`,
+                      }}>
+                        {valueChangePct > 0 ? '↑' : '↓'} {valueChangePct > 0 ? '+' : ''}{valueChangePct}%
                       </span>
                     )}
                     {isOnFlashSale && (

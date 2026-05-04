@@ -261,15 +261,10 @@ export default function MarketTab({
               if (!co || !cs || !entry) return null
               const locMult = calcLocationsMultiplier(entry.locations)
               const currentValue = Math.round(cs.profit * cs.multiplier * locMult)
-              const baseValue = Math.round(co.baseProfit * co.baseMultiplier * locMult)
               const totalInvested = (entry.purchasePrice || 0) + (entry.locationSpend || 0)
               const profitsCollected = entry.profitsCollected || 0
               const valueChange = currentValue - totalInvested
-              const marketDelta = currentValue - baseValue
               const totalGain = valueChange + profitsCollected
-              const sectorState = sectorCycles[co.sector]?.state || 'normal'
-              const isMarketUp = sectorState === 'boom' || economy.state === 'booming'
-              const isMarketDown = sectorState === 'downturn' || economy.state === 'slowdown'
               const roi = totalInvested > 0 ? Math.round((totalGain / totalInvested) * 100) : 0
               const gainColor  = totalGain >= 0 ? '#4ADE80' : '#FCA5A5'
               const gainBg     = totalGain >= 0 ? 'rgba(74,222,128,0.1)' : 'rgba(239,68,68,0.1)'
